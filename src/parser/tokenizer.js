@@ -83,6 +83,11 @@ module.exports = (input) => {
         current++;
         break;
 
+      case ':':
+        addToken('colon', ':');
+        current++;
+        break;
+
       case '!':
         if (!slice.indexOf('!=')) {
 
@@ -111,6 +116,10 @@ module.exports = (input) => {
         if (!slice.indexOf('-=')) {
 
           addToken('minus-equal', '-=');
+          current += 2;
+        } else if (!slice.indexOf('->')) {
+
+          addToken('arrow-left', '->');
           current += 2;
         } else {
 
