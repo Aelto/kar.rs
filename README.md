@@ -13,25 +13,50 @@ There is no `main` function to your program, the whole file is treated as the "m
 
 A simple hello world looks like:
 ```js
-import log
+import log;
 
-log('Hello World!')
-```
-
-## functions
-```js
-function add(a: int, b: int) int {
-  return a + b
-}
+log('Hello World!');
 ```
 
 ## variables
+declare immutable variables with `const`
 ```js
-// immutable variables
-const a: int = 15
+const a: int = 15;
 
-// mutable variables
-let b: int = 15
+a = 10; // Error
+```
+
+declare mutable variables with `let`
+```js
+let b: int = 15;
+
+b = 10; // it works
+```
+
+## functions
+a function without parameters nor return type
+```js
+import log;
+
+fn sayHello() {
+ log('Hello!');
+}
+```
+
+a function with parameters
+```js
+import log;
+
+fn printSum(a: int, b: int) {
+  log(a + b);
+}
+```
+
+a function with a return type
+```js
+fn add(a: int, b: int) -> int {
+  return a + b;
+}
 ```
 
 ## struct
@@ -55,13 +80,13 @@ struct myVector2 {
 }
 
 impl myVector2 {
-  static function from(x: int, y: int) myVector2 {
-    return myVector2 { x: x, y: y }
+  static fn from(x: int, y: int) -> myVector2 {
+    return myVector2 { x: x, y: y };
   }
   
-  function translate(x: int, y: int) {
-    this.x += x
-    this.y += y
+  fn translate(x: int, y: int) => {
+    this.x += x;
+    this.y += y;
   }
 }
 
@@ -73,14 +98,14 @@ customVector2.translate(15, 15)
 
 ### for loop
 ```js
-import log
+import log;
 
-for (i: int in 0..15) {
-  log(i)
+for (let i: int = 0; i < 10; i += 1) {
+  log(i);
 }
 
-for (i: int in 15..0)
-  log(i)
+for (let i: int in 15..0; i -= 1)
+  log(i);
 
 ```
 
@@ -90,7 +115,7 @@ import log
 
 let i: int = 15
 while (i >= 0) {
-  log(i--)
+  log(i--);
 }
 
 ```
@@ -111,40 +136,40 @@ if (choice) {
 
 ### ternary operator
 ```js
-const choice: bool = false
+const choice: bool = false;
 const value: int = choice
   ? 1
-  : 0
+  : 0;
   
 // can be written
-const valueTwo: int = choice ? 1 : 0
+const valueTwo: int = choice ? 1 : 0;
 ```
 
 ## Strings
-```
-const word: string = "Hello"
-const phrase: string = word + " World!"
+```js
+const word: string = "Hello";
+const phrase: string = word + " World!";
 
-let changingPhrase: string = "What am i?"
-changingPhrase += "You're not the same anymore"
+let changingPhrase: string = "What am i?";
+changingPhrase += "You're not the same anymore";
 
-log(word) // > "Hello"
-log(phrase) // > "Hello World!"
-log(changingPhrase) // > "What am i? You're not the same anymore"
+log(word); // > "Hello"
+log(phrase); // > "Hello World!"
+log(changingPhrase); // > "What am i? You're not the same anymore"
 ```
 
 ## Lists
 ### fixed length
 ```js
-const words: [2]string = ["Hello", "World!"
+const words: [2]string = ["Hello", "World!"];
 ```
 
 ### dynamic size
 ```js
-const words: [_]string = []
+const words: []string = [];
 words.push("Hello")
   .push("World!")
-  .push("Foo")
+  .push("Foo");
 ```
 
 ## Dictionnary (string to any type)
@@ -154,15 +179,15 @@ const letterToNumber: <int>{
  "b": 2,
  "c": 3,
  "d": 4,
-}
+};
 
-letterToNumber.e = 5
+letterToNumber.e = 5;
 
-const letter: string = "f"
-letterToNumber[f] = 6
+const letter: string = "f";
+letterToNumber[f] = 6;
 
-log(letterToNumber.a) // > 1
-log(letterToNumber.z) // > null
+log(letterToNumber.a); // > 1
+log(letterToNumber.z); // > null
 ```
 
 ## modules
@@ -170,20 +195,21 @@ declare what you want to be exported with the `export` keyword
 
 ### single function module
 ```js
-export default function add(a: int, b: int) int {
-  return a + b
+export fn add(a: int, b: int) -> int {
+  return a + b;
 }
 ```
 
 ### multiple functions module
 ```js
 
-export function add(a: int, b: int) int {
-  return a + b
+export myModule {
+  fn add(a: int, b: int) -> int {
+    return a + b;
+  }
+  
+  fn mul(a: int, b: int) -> int {
+    return a * b;
+  }
 }
-
-export function mul(a: int, b: int) int {
-  return a * b
-}
-
 ```
