@@ -1,0 +1,8 @@
+fn main() {
+
+  if (fdsfsd) {
+    log("Hello World!")
+  }
+
+  const d = 5;
+}
