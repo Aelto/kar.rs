@@ -1,4 +1,5 @@
-const keywords = require('./keywords.js')
+const keywords = require('./keywords.js');
+const chalk = require('chalk');
 
 module.exports = (input) => {
   const tokens = [];
@@ -84,8 +85,15 @@ module.exports = (input) => {
         break;
 
       case ':':
-        addToken('colon', ':');
-        current++;
+        if (!slice.indexOf('::')) {
+
+          addToken('double-colon', '::');
+          current += 2;
+        } else {
+          
+          addToken('colon', ':');
+          current++;
+        }
         break;
 
       case '!':
@@ -119,7 +127,7 @@ module.exports = (input) => {
           current += 2;
         } else if (!slice.indexOf('->')) {
 
-          addToken('arrow-left', '->');
+          addToken('arrow-right', '->');
           current += 2;
         } else {
 
@@ -200,11 +208,16 @@ module.exports = (input) => {
             break;
           }
 
+          if (sub_char === '\n') {
+            throw `unterminated string at ${cursor_y}:${cursor_x} \n>> $printLine(input, cursor_y)}`;
+          }
+
           sub_current++;
         }
 
         if (sub_current >= slice.length) {
-          throw `unterminated string at ${cursor_y}:${cursor_x} "${slice.substring(1, 12 > slice.length ? slice.length : 12)}...`;
+          // slice.substring(1, 12 > slice.length ? slice.length : 12)
+          throw `unterminated string at ${cursor_y}:${cursor_x} \n>> ${printLine(input, cursor_y)}`;
         }
         break;
 
@@ -268,13 +281,11 @@ module.exports = (input) => {
 
             sub_current++;
           }
+
+          current++;
         } else {
           throw `unrecognized character at ${cursor_y}:${cursor_x} ${char}`;
         }
-
-        current++;
-        continue;
-        throw `unrecognized character at ${cursor_y}:${cursor_x} ${char}`;
 
         break;
     }
@@ -304,4 +315,12 @@ function isToken(tokenRegex, slice) {
 
     return match.index;
   }
+}
+
+function printLine(input, line_y) {
+  return input.split('\n')[line_y - 1];
+}
+
+function pointAt(input, line_x) {
+  // TODO
 }

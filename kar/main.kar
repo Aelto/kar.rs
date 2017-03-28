@@ -1,8 +1,13 @@
-fn main() {
+extern iostream;
 
-  if (fdsfsd) {
-    log("Hello World!")
-  }
+console.log("hello world);
 
-  const d = 5;
+fn main() -> int {
+  iostream::cout("Hello world!");
+
+  return 1;
+}
+
+fn main() -> int {
+
 }

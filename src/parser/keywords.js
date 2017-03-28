@@ -11,4 +11,5 @@ module.exports = {
   'for': { r:/(for\s)/, s: 'for' },
   'while': { r:/(while\s)/, s: 'while' },
   'return': { r:/(return\s)/, s: 'return' },
+  'extern': { r:/(extern\s)/, s: 'extern'}
 }
