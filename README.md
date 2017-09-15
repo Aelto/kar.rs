@@ -84,7 +84,7 @@ impl myVector2 {
     return myVector2 { x: x, y: y };
   }
   
-  fn translate(x: int, y: int) => {
+  fn translate(x: int, y: int) {
     this.x += x;
     this.y += y;
   }
@@ -126,7 +126,7 @@ while (i >= 0) {
 const choice: bool = false
 if (choice) {
 
-} else if (false) {
+} else if (!choice) {
 
 } else {
 
