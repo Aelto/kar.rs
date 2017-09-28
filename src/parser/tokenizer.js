@@ -1,7 +1,7 @@
-const keywords = require('./keywords.js');
-const chalk = require('chalk');
+const keywords = require("./keywords.js");
+const chalk = require("chalk");
 
-module.exports = (input) => {
+module.exports = input => {
   const tokens = [];
   let current = 0;
   let slice = input.substring(0);
@@ -19,7 +19,7 @@ module.exports = (input) => {
   };
 
   const keywords_keys = Object.keys(keywords);
-  const checkKeywords = (slice) => {
+  const checkKeywords = slice => {
     for (let i = 0; i < keywords_keys.length; i++) {
       const currentKeyword = keywords[keywords_keys[i]];
 
@@ -32,7 +32,7 @@ module.exports = (input) => {
     }
 
     return false;
-  }
+  };
 
   while (current < input.length) {
     const char = input.charAt(current);
@@ -43,154 +43,135 @@ module.exports = (input) => {
     let sub_char = char;
 
     switch (char) {
-      case '\n':
+      case "\n":
         cursor_y += 1;
         cursor_x = 1;
         current++;
         break;
 
-      case '(':
-        addToken('left-paren', '(');
+      case "(":
+        addToken("left-paren", "(");
         current++;
         break;
 
-      case ')':
-        addToken('right-paren', ')');
+      case ")":
+        addToken("right-paren", ")");
         current++;
         break;
 
-      case '{':
-        addToken('left-brace', '{');
+      case "{":
+        addToken("left-brace", "{");
         current++;
         break;
 
-      case '}':
-        addToken('right-brace', '}');
+      case "}":
+        addToken("right-brace", "}");
         current++;
         break;
 
-      case ',':
-        addToken('comma', ',');
+      case ",":
+        addToken("comma", ",");
         current++;
         break;
 
-      case '.':
-        addToken('dot', '.');
+      case ".":
+        addToken("dot", ".");
         current++;
         break;
 
-      case ';':
-        addToken('semicolon', ';');
+      case ";":
+        addToken("semicolon", ";");
         current++;
         break;
 
-      case ':':
-        if (!slice.indexOf('::')) {
-
-          addToken('double-colon', '::');
+      case ":":
+        if (!slice.indexOf("::")) {
+          addToken("double-colon", "::");
           current += 2;
         } else {
-          
-          addToken('colon', ':');
+          addToken("colon", ":");
           current++;
         }
         break;
 
-      case '!':
-        if (!slice.indexOf('!=')) {
-
-          addToken('bang-equal', '!=');
+      case "!":
+        if (!slice.indexOf("!=")) {
+          addToken("bang-equal", "!=");
           current += 2;
         } else {
-
-          addToken('bang', '!');
+          addToken("bang", "!");
           current++;
         }
         break;
 
-      case '+':
-        if (!slice.indexOf('+=')) {
-
-          addToken('plus-equal', '+=');
+      case "+":
+        if (!slice.indexOf("+=")) {
+          addToken("plus-equal", "+=");
           current += 2;
         } else {
-
-          addToken('plus', '+');
+          addToken("plus", "+");
           current++;
         }
         break;
 
-      case '-':
-        if (!slice.indexOf('-=')) {
-
-          addToken('minus-equal', '-=');
+      case "-":
+        if (!slice.indexOf("-=")) {
+          addToken("minus-equal", "-=");
           current += 2;
-        } else if (!slice.indexOf('->')) {
-
-          addToken('arrow-right', '->');
+        } else if (!slice.indexOf("->")) {
+          addToken("arrow-right", "->");
           current += 2;
         } else {
-
-          addToken('minus', '-');
+          addToken("minus", "-");
           current++;
         }
 
-      case '*':
-        if (!slice.indexOf('*=')) {
-
-          addToken('star-equal', '*=');
+      case "*":
+        if (!slice.indexOf("*=")) {
+          addToken("star-equal", "*=");
           current += 2;
         } else {
-
-          addToken('star', '*');
+          addToken("star", "*");
           current++;
         }
         break;
 
-      case '/':
-        if (!slice.indexOf('/=')) {
-
-          addToken('slash-equal', '/=');
+      case "/":
+        if (!slice.indexOf("/=")) {
+          addToken("slash-equal", "/=");
           current += 2;
         } else {
-
-          addToken('slash', '/');
+          addToken("slash", "/");
           current++;
         }
         break;
 
-      case '=':
-        if (!slice.indexOf('==')) {
-
-          addToken('equal-equal', '==');
+      case "=":
+        if (!slice.indexOf("==")) {
+          addToken("equal-equal", "==");
           current += 2;
         } else {
-
-          addToken('equal', '=');
+          addToken("equal", "=");
           current++;
         }
         break;
 
-      case '>':
-        if (!slice.indexOf('>=')) {
-
-          addToken('greater-equal', '>=');
+      case ">":
+        if (!slice.indexOf(">=")) {
+          addToken("greater-equal", ">=");
           current += 2;
         } else {
-
-          addToken('greater', '>');
+          addToken("greater", ">");
           current++;
         }
         break;
 
-      case '<':
-        if (!slice.indexOf('<=')) {
-
-          addToken('less-equal', '<=');
+      case "<":
+        if (!slice.indexOf("<=")) {
+          addToken("less-equal", "<=");
           current += 2;
         } else {
-
-          addToken('less', '<');
+          addToken("less", "<");
           current++;
         }
         break;
@@ -203,34 +184,36 @@ module.exports = (input) => {
           sub_char = slice.charAt(sub_current);
 
           if (sub_char === '"') {
-            addToken('string', slice.substring(1, sub_current));
+            addToken("string", slice.substring(1, sub_current));
             current += sub_current + 1;
             break;
           }
 
-          if (sub_char === '\n') {
-            throw `unterminated string at ${cursor_y}:${cursor_x} \n>> $printLine(input, cursor_y)}`;
+          if (sub_char === "\n") {
+            throw `unterminated string at ${cursor_y}:${cursor_x} \n>> ${printLine(input, cursor_y)}`;
           }
 
           sub_current++;
         }
 
         if (sub_current >= slice.length) {
-          // slice.substring(1, 12 > slice.length ? slice.length : 12)
-          throw `unterminated string at ${cursor_y}:${cursor_x} \n>> ${printLine(input, cursor_y)}`;
+          throw `unterminated string at ${cursor_y}:${cursor_x} \n>> ${printLine(
+            input,
+            cursor_y
+          )}`;
         }
         break;
 
-      case '1':
-      case '2':
-      case '3':
-      case '4':
-      case '5':
-      case '6':
-      case '7':
-      case '8':
-      case '9':
-      case '0':
+      case "1":
+      case "2":
+      case "3":
+      case "4":
+      case "5":
+      case "6":
+      case "7":
+      case "8":
+      case "9":
+      case "0":
         sub_current = 0;
         sub_char = slice.charAt(sub_current);
 
@@ -240,16 +223,16 @@ module.exports = (input) => {
         while (sub_current < slice.length) {
           sub_char = slice.charAt(sub_current);
 
-          if (sub_char === '.') {
+          if (sub_char === ".") {
             isFloat = true;
           }
 
-          if (!isDigit(sub_char) && sub_char !== '.') {
+          if (!isDigit(sub_char) && sub_char !== ".") {
             addToken(
-              isFloat ? 'number-float' : 'number',
+              isFloat ? "number-float" : "number",
               slice.substring(0, sub_current)
             );
-            current += sub_current + 1;
+            current += sub_current;
             break;
           }
 
@@ -257,14 +240,13 @@ module.exports = (input) => {
         }
         break;
 
-      case ' ':
-      case '\r':
+      case " ":
+      case "\r":
         current++;
         break;
 
       default:
         if (checkKeywords(slice)) {
-          
         } else if (char.match(/[aA-zZ]/)) {
           // look for any identifier
           sub_current = 0;
@@ -274,7 +256,7 @@ module.exports = (input) => {
             sub_char = slice.charAt(sub_current);
 
             if (sub_char.match(/([aA-zZ]|[0-9])/) === null) {
-              addToken('identifier', slice.substring(0, sub_current));
+              addToken("identifier", slice.substring(0, sub_current));
               current += sub_current - 1;
               break;
             }
@@ -289,11 +271,10 @@ module.exports = (input) => {
 
         break;
     }
-
   }
 
   return tokens;
-}
+};
 
 const ALPHA = /([A-Z]|[a-z])/;
 function isAlpa(char) {
@@ -306,19 +287,17 @@ function isDigit(char) {
 }
 
 function isToken(tokenRegex, slice) {
-  const match = slice.match(tokenRegex)
+  const match = slice.match(tokenRegex);
 
   if (match === null) {
-
     return -1;
   } else {
-
     return match.index;
   }
 }
 
 function printLine(input, line_y) {
-  return input.split('\n')[line_y - 1];
+  return input.split("\n")[line_y - 1];
 }
 
 function pointAt(input, line_x) {
