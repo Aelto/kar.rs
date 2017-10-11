@@ -11,5 +11,7 @@ module.exports = {
   'for': { r:/(for\s)/, s: 'for' },
   'while': { r:/(while\s)/, s: 'while' },
   'return': { r:/(return\s)/, s: 'return' },
-  'import': { r:/(import\s)/, s: 'import'}
+  'import': { r:/(import\s)/, s: 'import'},
+  'and': { r: /(and\s)/, s: 'and' },
+  'or': { r: /(or\s)/, s: 'or' }
 }

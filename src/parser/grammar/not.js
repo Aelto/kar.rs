@@ -1,22 +1,36 @@
+const Result = require('./result.js')
+
 class Not {
   constructor(name, composition) {
     this.name = name
     this.composition = composition
+
+    this.parent = null
+  }
+
+  setParent(parent) {
+    this.parent = parent
+
+    return this
   }
 
   parse(source, position, result) {
     if (!this.composition.search(source, position)) {
-      position = this.composition.parse(source, position, result)
+      const newResult = new Result(this.name)
+      position = this.composition.parse(source, position, newResult.composition)
     }
-
+    
     return position
   }
-
+  
   search(source, position) {
-    if (!this.composition.search(source, position)) {
-      return true
+    const result = this.composition.search(source, position)
+    if (!result.success) {
+      return { success: true, position: result.position }
     }
 
-    return false
+    return { success: false, position }
   }
 }
+
+module.exports = Not

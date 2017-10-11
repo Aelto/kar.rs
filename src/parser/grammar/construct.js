@@ -1,25 +1,40 @@
-const Result = require('./result.js')
+const chalk = require("chalk")
+const Result = require("./result.js")
 
 class Construct {
   constructor(name, composition) {
+    if (!Array.isArray(composition)) {
+      throw new Error('composition must be of type array, found ', composition)
+    }
     this.name = name
     this.composition = composition
+
+    for (const child of this.composition)
+      child.setParent(this)
+
+    this.parent = null
+  }
+
+  setParent(parent) {
+    this.parent = parent
+
+    return this
   }
 
   parse(source, position = 0, result = []) {
     const newResult = new Result(this.name)
 
+    const search = this.search(source, position)
+    if (!search.success) {
+      return position
+    }
+
     for (let i = 0; i < this.composition.length; i++) {
-      if (this.composition[i].constructor.name === "Token")
-        position = source[position].parse(source, position, newResult.list)
-
-      if (this.composition[i].constructor.name === "Construct") {
-        position = source[position].parse(source, position, newResult.list)
-      }
-
-      if (this.composition[i].constructor.name === "Option") {
-        position = this.composition[i].parse(source, position, newResult.list)
-      }
+      position = this.composition[i].parse(
+        source,
+        position,
+        newResult.composition
+      )
 
       if (position >= source.length) {
         break
@@ -31,18 +46,30 @@ class Construct {
   }
 
   search(source, position) {
+
     for (let i = 0; i < this.composition.length; i++) {
-      if (!this.composition[i].search(source, position)) {
-        if (this.composition[i].constructor.name === 'Option') {
-          continue;
-        } else {
-          return false
-        }
+      if (position >= source.length - 1)
+        return { success: false, position: source.length - 1 }
+
+      const result = this.composition[i].search(source, position)
+
+      if (!result.success) {
+
+        if (this.composition[i].constructor.name !== 'Option')
+          return result
       }
 
-      position += 1
+
+      // if (this.composition[i].constructor.name === 'Option' && result.success && result.position === position) {
+      //   return { success: false, position }
+      // }
+
+      if (result.success) position = result.position
+
+      if (position >= source.length - 1) break
     }
-    return true
+
+    return { success: true, position }
   }
 }
 

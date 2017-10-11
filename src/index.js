@@ -13,13 +13,13 @@ const entryPoint = options.length != 0
   : 'main.kar';
   
 if (fs.existsSync(entryPoint)) {
-  try {
+  parser(fs.readFileSync(entryPoint, 'utf8'));
+  // try {
 
-    parser(fs.readFileSync(entryPoint, 'utf8'));
-  } catch (e) {
+  // } catch (e) {
     
-    printError(e);
-  }
+  //   printError(e);
+  // }
   
 
 } else {
