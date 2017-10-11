@@ -1,90 +1,72 @@
 const tokenizer = require('./tokenizer.js')
-const { Token, Construct, Option, Result, Either, Not } = require('./grammar')
+const { Token, Construct, Option, Result, Either, Not, Ref } = require('./grammar')
 
 const t = str => new Token(str)
 
-const parameter = new Either('parameter', [
+const GRAMMAR = {}
+
+GRAMMAR.parameter = new Either('parameter', [
   t('identifier'),
   t('string'),
   t('number'),
   t('number-float')
 ])
 
-const functionCall = [
+GRAMMAR.functionCallConstruct = new Construct('function-call', [
   t('identifier'),
   t('left-paren'),
   new Option(
     'function-call-args',
     new Construct('function-call-args-construct', [
-      parameter,
+      GRAMMAR.parameter,
       new Option(
         'function-call-args-multiple-comma',
-        new Construct('function-call-args-multiple-comma', [
-          t('comma'),
-          parameter
-        ])
+        new Construct('function-call-args-multiple-comma', [t('comma'), GRAMMAR.parameter])
       ).repeatOneOrMore()
     ])
   ),
   t('right-paren'),
   t('semicolon')
-]
-const functionCallConstruct = new Construct('function-call', functionCall)
+])
 
-const variableAssign = [
+GRAMMAR.variableAssign = [
   t('identifier'),
   new Option(
     'type-declaration',
-    new Construct('type-decl-construct', [
-      t('colon'),
-      t('identifier')
-    ])
+    new Construct('type-decl-construct', [t('colon'), t('identifier')])
   ),
   t('equal'),
-  new Either('number-or-string', [
-    t('number'),
-    t('string'),
-    functionCallConstruct
-  ])
+  new Either('number-or-string', [t('number'), t('string'), GRAMMAR.functionCallConstruct])
 ]
 
-const variableDeclaration = new Construct('variable', [
+GRAMMAR.variableDeclaration = new Construct('variable', [
   t('let'),
-  ...variableAssign,
+  ...GRAMMAR.variableAssign,
   new Option(
     'multiple-variable-declaration',
     new Construct('multiple-variable-declaration-construct', [
       t('comma'),
-      ...variableAssign
+      ...GRAMMAR.variableAssign
     ])
   ).repeatOneOrMore(),
   t('semicolon')
 ])
 
-
-
-const functionDeclaration = [
+GRAMMAR.functionDeclarationConstruct = new Construct('function-declaration', [
   t('function'),
   t('identifier'),
   t('left-paren'),
   new Option('args', [
-    parameter,
-    new Option('args-multiple', [
-      t('comma'),
-      parameter
-    ]).repeatOneOrMore()
+    GRAMMAR.parameter,
+    new Option('args-multiple', [t('comma'), GRAMMAR.parameter]).repeatOneOrMore()
   ]),
   t('right-paren'),
   t('left-brace'),
-  new Option('', variableDeclaration),
+  new Ref(GRAMMAR, 'body'),
   t('right-brace')
-]
-const functionDeclarationConstruct = new Construct(
-  'function-declaration',
-  functionDeclaration
-)
+])
 
-const comparison = new Either('comparison', [
+GRAMMAR.comparison = new Either('comparison', [
   t('greater'),
   t('greater-equal'),
   t('lesser'),
@@ -93,7 +75,7 @@ const comparison = new Either('comparison', [
   t('bang-equal')
 ])
 
-const compared = new Either('compared', [
+GRAMMAR.compared = new Either('compared', [
   t('identifier'),
   t('true'),
   t('false'),
@@ -102,35 +84,29 @@ const compared = new Either('compared', [
   t('number-float')
 ])
 
-const logic = new Either('if-logic', [
-  compared,
-  new Construct('complete-comparaison', [compared, comparison, compared])
+GRAMMAR.logic = new Either('if-logic', [
+  GRAMMAR.compared,
+  new Construct('complete-comparaison', [GRAMMAR.compared, GRAMMAR.comparison, GRAMMAR.compared])
 ])
 
-const ifStatement = [
+GRAMMAR.ifStatementConstruct = new Construct('if-statement', [
   t('if'),
   t('left-paren'),
-  logic,
-  new Option('', [
-    new Either('', [t('and'), t('or')]),
-    logic
-  ]).repeatOneOrMore(),
+  GRAMMAR.logic,
+  new Option('', [new Either('', [t('and'), t('or')]), GRAMMAR.logic]).repeatOneOrMore(),
   t('right-paren')
-]
-const ifStatementConstruct = new Construct('if-statement', ifStatement)
+])
 
-const body = new Construct('body', [
+GRAMMAR.body = new Construct('body', [
   new Option('body', [
     new Either('body-either', [
-      ifStatementConstruct,
-      functionDeclarationConstruct,
-      variableDeclaration,
-      functionCallConstruct
+      GRAMMAR.ifStatementConstruct,
+      GRAMMAR.functionDeclarationConstruct,
+      GRAMMAR.variableDeclaration,
+      GRAMMAR.functionCallConstruct
     ])
   ]).repeatOneOrMore()
 ])
-
-
 
 module.exports = input => {
   test(
@@ -138,10 +114,10 @@ module.exports = input => {
     fn main() {
       let a = 10;
 
-      log();
+      log(a)
     }
   `,
-    body
+    GRAMMAR.body
   )
 
   // test(`
@@ -206,8 +182,6 @@ function test(str, construct) {
   const results = new Result(construct.name)
   construct.parse(tokens, 0, results.composition)
   console.log(results)
-  console.log(
-    results.composition.reduce((acc, cur) => acc + cur.getPrint(), '')
-  )
+  console.log(results.composition.reduce((acc, cur) => acc + cur.getPrint(), ''))
   console.log(results.flatResult().join(' '))
 }

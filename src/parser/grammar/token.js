@@ -33,23 +33,23 @@ class Token {
   search(source, position) {
     const result = { success: this.compare(source[position]), position: position + 1 }
 
-    if (!result.success) {
-      let el = this.parent
-      let failureMessage = `Unrecognized token, expected ${chalk.green(this.type)} found ${chalk.red(source[position].type)}`
-      let shouldPrint = true // set to false if an Option is encountered
-      while (el !== null) {
-        failureMessage += `\n  in ${el.name}`
+    // if (!result.success) {
+    //   let el = this.parent
+    //   let failureMessage = `Unrecognized token, expected ${chalk.green(this.type)} found ${chalk.red(source[position].type)}`
+    //   let shouldPrint = true // set to false if an Option is encountered
+    //   while (el !== null) {
+    //     failureMessage += `\n  in ${el.name}`
 
-        if (el.constructor.name === 'Option') {
-          shouldPrint = false
-          break
-        }
+    //     if (el.constructor.name === 'Option') {
+    //       shouldPrint = false
+    //       break
+    //     }
 
-        el = el.parent
-      }
+    //     el = el.parent
+    //   }
 
-      // if (shouldPrint) console.log(failureMessage)
-    }
+    //   // if (shouldPrint) console.log(failureMessage)
+    // }
 
     return result
   }

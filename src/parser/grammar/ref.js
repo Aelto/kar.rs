@@ -26,16 +26,18 @@ class Ref {
   }
 
 
-  get setParent(parent) {
-    return this.ref.setParent(parent)
+  setParent(parent) {
+    // return this.ref.setParent(parent)
   }
 
-  get parse(source, position, result) {
+  parse(source, position, result) {
     return this.ref.parse(source, position, result)
   }
 
-  get search(source, position) {
+  search(source, position) {
     return this.ref.search(source, position)
   }
 
 }
+
+module.exports = Ref
