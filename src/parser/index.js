@@ -1,16 +1,28 @@
 const tokenizer = require('./tokenizer.js')
 const { Token, Construct, Option, Result, Either, Not, Ref } = require('./grammar')
+const translateElement = require('./translater/index.js')
+const chalk = require('chalk')
 
 const t = str => new Token(str)
 
 const GRAMMAR = {}
 
-GRAMMAR.parameter = new Either('parameter', [
+GRAMMAR.typeDeclarationConstruct = new Construct('type-decl-construct', [
+  t('colon'),
+  t('identifier')
+])
+
+GRAMMAR.varOrPrimitive = new Either('variable-or-primitive', [
   t('identifier'),
   t('string'),
   t('number'),
   t('number-float')
 ])
+
+GRAMMAR.parameter = [
+  new Ref(GRAMMAR, 'varOrPrimitive'),
+  new Option('type-decl-option', GRAMMAR.typeDeclarationConstruct)
+]
 
 GRAMMAR.functionCallConstruct = new Construct('function-call', [
   t('identifier'),
@@ -18,10 +30,10 @@ GRAMMAR.functionCallConstruct = new Construct('function-call', [
   new Option(
     'function-call-args',
     new Construct('function-call-args-construct', [
-      GRAMMAR.parameter,
+      ...GRAMMAR.parameter,
       new Option(
         'function-call-args-multiple-comma',
-        new Construct('function-call-args-multiple-comma', [t('comma'), GRAMMAR.parameter])
+        new Construct('function-call-args-multiple-comma', [t('comma'), ...GRAMMAR.parameter])
       ).repeatOneOrMore()
     ])
   ),
@@ -31,12 +43,9 @@ GRAMMAR.functionCallConstruct = new Construct('function-call', [
 
 GRAMMAR.variableAssign = [
   t('identifier'),
-  new Option(
-    'type-declaration',
-    new Construct('type-decl-construct', [t('colon'), t('identifier')])
-  ),
+  new Option('type-declaration', GRAMMAR.typeDeclarationConstruct),
   t('equal'),
-  new Either('number-or-string', [t('number'), t('string'), GRAMMAR.functionCallConstruct])
+  new Either('number-or-string', [t('number'), t('string'), t('number-float'), GRAMMAR.functionCallConstruct])
 ]
 
 GRAMMAR.variableDeclaration = new Construct('variable', [
@@ -56,11 +65,12 @@ GRAMMAR.functionDeclarationConstruct = new Construct('function-declaration', [
   t('function'),
   t('identifier'),
   t('left-paren'),
-  new Option('args', [
-    GRAMMAR.parameter,
-    new Option('args-multiple', [t('comma'), GRAMMAR.parameter]).repeatOneOrMore()
+  new Option('parameter', [
+    ...GRAMMAR.parameter,
+    new Option('parameter-multiple', [t('comma'), ...GRAMMAR.parameter]).repeatOneOrMore()
   ]),
   t('right-paren'),
+  new Option('type-declaration-option', GRAMMAR.typeDeclarationConstruct),
   t('left-brace'),
   new Ref(GRAMMAR, 'body'),
   t('right-brace')
@@ -94,7 +104,10 @@ GRAMMAR.ifStatementConstruct = new Construct('if-statement', [
   t('left-paren'),
   GRAMMAR.logic,
   new Option('', [new Either('', [t('and'), t('or')]), GRAMMAR.logic]).repeatOneOrMore(),
-  t('right-paren')
+  t('right-paren'),
+  t('left-brace'),
+  new Ref(GRAMMAR, 'body'),
+  t('right-brace')
 ])
 
 GRAMMAR.body = new Construct('body', [
@@ -109,64 +122,34 @@ GRAMMAR.body = new Construct('body', [
 ])
 
 module.exports = input => {
-  test(
-    `
-    fn main() {
-      let a = 10;
-
-      log(a)
-    }
-  `,
-    GRAMMAR.body
-  )
-
-  // test(`
-  //   log("str");
-  // `, functionCallConstruct)
-
-  // test(
-  //   `if (a == b && a != b || b == 1)`,
-  //   new Construct('if', [
-  //     t('if'),
-  //     t('left-paren'),
-  //     logic,
-  //     new Option('', [
-  //       new Either('', [t('ampersand-ampersand'), t('pipe-pipe')]),
-  //       logic
-  //     ]).repeatOneOrMore(),
-  //     t('right-paren')
-  //   ])
-  // )
-
-  // test(`
-  //   if (a == b)
-  // `, new Construct('if', ifStatement))
-
   // test(
   //   `
-  //   fn main(5, "hello", 5.15) {
-  //     let a: int = 5,
-  //         b = "Hello world !";
+  //   fn main() {
+  //     let a: int = 10;
+
+  //     if (a > 5) {
+  //       log(a);
+  //     }
+
   //   }
   // `,
-  //   functionDeclarationConstruct
+  //   GRAMMAR.body
   // )
 
   // test(
   //   `
-  // let a = "Hello";
-  // `,
-  //   con
+  //   fn main(argc: int) {
+  //     let a: int = 10;
+  //   }`,
+  //   GRAMMAR.functionDeclarationConstruct
   // )
 
-  // test(
-  //   `
-  // let b = 10,
-  //     c = 15,
-  //     d = 20;
-  //    `,
-  //   con
-  // )
+  test(
+    `
+    let a: float = 5.6;
+    `,
+    GRAMMAR.variableDeclaration
+  )
 }
 
 function test(str, construct) {
@@ -177,11 +160,16 @@ function test(str, construct) {
     throw err
   }
 
-  tokens.forEach(t => console.log(t))
-
   const results = new Result(construct.name)
   construct.parse(tokens, 0, results.composition)
-  console.log(results)
+
   console.log(results.composition.reduce((acc, cur) => acc + cur.getPrint(), ''))
   console.log(results.flatResult().join(' '))
+
+  if (results.composition.length) {
+    console.log(`\n${chalk.green('Output:')}\n${translateElement(results.composition[0])}`)
+
+  } else {
+
+  }
 }
