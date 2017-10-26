@@ -8,7 +8,9 @@ class Ref {
 
     this.scope = null
 
-    this.isOption
+    this.isOption = false
+
+    this.isScopePrivate = false
   }
 
   get ref() {
@@ -75,6 +77,12 @@ class Ref {
     return this
   }
 
+  privateScope(bool = false) {
+    this.isScopePrivate = bool
+
+    return this
+  }
+
   /**
    * get whether the reference will retrieve the variable with
    * the supplied name.
@@ -104,8 +112,11 @@ class Ref {
   run(result, scope) {
     if (this.ref === null) throw new Error(`ref pointing to unknown element: ${this._refName}`)
 
-    this.scope = scope
-    this.ref.setRef(this).run(result, scope)
+    this.scope = this.isScopePrivate
+      ? Object.assign({}, scope)
+      : scope
+
+    this.ref.setRef(this).run(result, this.scope)
     this.scope = null
   }
 }
