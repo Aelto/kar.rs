@@ -75,7 +75,7 @@ class Translate {
         if (selfEl.constructor.name === 'Ref') selfEl.run(resultEl, this.scope)
         else selfEl.setRef(this.ref).run(resultEl, this.scope)
       } else {
-        if (resultEl.isOption) {
+        if (selfEl.isOption) {
           resultCompositionIndex -= 1
         } else {
           break

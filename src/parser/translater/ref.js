@@ -7,6 +7,8 @@ class Ref {
     this.shouldRetrieveMap = {}
 
     this.scope = null
+
+    this.isOption
   }
 
   get ref() {
@@ -25,7 +27,6 @@ class Ref {
    * for extracted variables storage.
    * @param {string} name the scope name
    */
-
   useScope(name) {
     this._usedScope = name
 
@@ -69,6 +70,8 @@ class Ref {
   }
 
   option(bool = false) {
+    this.isOption = bool
+
     return this
   }
 

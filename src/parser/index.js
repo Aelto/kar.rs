@@ -122,31 +122,9 @@ GRAMMAR.body = new Construct('body', [
 ])
 
 module.exports = input => {
-  // test(
-  //   `
-  //   fn main() {
-  //     let a: int = 10;
-
-  //     if (a > 5) {
-  //       log(a);
-  //     }
-
-  //   }
-  // `,
-  //   GRAMMAR.body
-  // )
-
-  // test(
-  //   `
-  //   fn main(argc: int) {
-  //     let a: int = 10;
-  //   }`,
-  //   GRAMMAR.functionDeclarationConstruct
-  // )
-
   test(
     `
-    let a: float = 5.6;
+    let a = 5.6;
     `,
     GRAMMAR.variableDeclaration
   )

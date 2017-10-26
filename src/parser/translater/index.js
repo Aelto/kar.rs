@@ -26,11 +26,6 @@ int a = 15;
 auto b = "hello world";
 `
 
-/**
- * TODO: faire un systeme de comparaison du résultat et des tokens du translate
- * pour que le ref sache lequel des résultat prendre
- */
-
 const results = result('variable-declaration', [
   tok('let', 'let'),
   tok('identifier', 'a'),
@@ -75,7 +70,6 @@ translations['variable'] = translate('variable', {
     str().string(';')
   ]
 })
-
 
 const translateElement = el => {
   if (translations[el.name])
