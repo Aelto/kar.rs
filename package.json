@@ -7,7 +7,7 @@
     "type": "git"
   },
   "scripts": {
-    "start": "node src/index.js kar/main.kar",
+    "start": "node src/index.js kar/main.kar --debug",
     "test": "ava ./test/index.js"
   },
   "author": "Aelto <thibault.hottou@gmail.com>",

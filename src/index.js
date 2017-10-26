@@ -1,32 +1,26 @@
 #! /usr/bin/env node
-'use strict';
+'use strict'
 
-const fs = require('fs');
-const chalk = require('chalk');
-const parser = require('./parser');
+const fs = require('fs')
+const chalk = require('chalk')
+const parser = require('./parser')
 
-const args = process.argv;
-const [nodeLocation, karcLocation, ...options] = args;
+const args = process.argv
+const [nodeLocation, karcLocation, ...options] = args
 
-const entryPoint = options.length != 0
-  ? options[0]
-  : 'main.kar';
-  
+const entryPoint = options.length != 0 ? options[0] : 'main.kar'
+
+if (options.indexOf('--debug') >= 0) {
+  process.DEBUG = true
+}
+
+
 if (fs.existsSync(entryPoint)) {
-  parser(fs.readFileSync(entryPoint, 'utf8'));
-  // try {
-
-  // } catch (e) {
-    
-  //   printError(e);
-  // }
-  
-
+  parser(fs.readFileSync(entryPoint, 'utf8'))
 } else {
-
-  printError(`Could not find the entry point \`${chalk.magenta(entryPoint)}\``)  
+  printError(`Could not find the entry point \`${chalk.magenta(entryPoint)}\``)
 }
 
 function printError(err) {
-  console.log(`${chalk.red('Error')} ${err}`);
+  console.log(`${chalk.red('Error')} ${err}`)
 }

@@ -1,12 +1,2 @@
-import iostream;
 
-let a: int = 10;
-let b = 10,
-    c = 15,
-    d = 20;
-
-fn main() -> int {
-  iostream::cout("Hello world!");
-
-  return 1;
-}
+let a = 10;
