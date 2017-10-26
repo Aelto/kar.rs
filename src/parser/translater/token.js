@@ -1,5 +1,3 @@
-const Interface = require('./interface.js')
-
 class Token {
   constructor(type) {
     /**
