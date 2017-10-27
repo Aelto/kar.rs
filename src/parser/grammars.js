@@ -6,116 +6,197 @@ const translaterStr = require('./translater/str.js')
 const translaterToken = require('./translater/token.js')
 const translaterTranslate = require('./translater/translate.js')
 const translaterEither = require('./translater/either.js')
-const translations = {}
 const ref = n => new translaterRef(translations, n)
 const str = () => new translaterStr()
 const token = n => new translaterToken(n)
 const translate = (n, c) => new translaterTranslate(n, c)
 const either = c => new translaterEither(c)
 
-translations['type-decl-construct'] = translate('type-decl-construct', {
-  composition: [token('colon'), token('identifier').store('variable-type')],
-  output: []
-}),
-
-translations['number-or-string'] = translate('number-or-string', {
-  composition: [either([token('number'), token('number-float'), token('string')]).store('value')],
-  output: []
-}),
-
-translations['variable'] = translate('variable', {
-  composition: [
-    token('let'),
-    token('identifier').store('variable-name'),
-    ref('type-decl-construct').option(true).retrieve('variable-type'),
-    token('equal'),
-    ref('number-or-string').retrieve('value'),
-    token('semicolon')
-  ],
-  privateScope: true,
-  output: [
-    str()
-      .fromStore('variable-type')
-      .or(str().string('auto')),
-    str().fromStore('variable-name'),
-    str().string('='),
-    str().fromStore('value'),
-    str().string(';')
-  ]
-})
-
 const t = str => new Token(str)
 
 const GRAMMAR = {}
+const translations = {}
 
-GRAMMAR.typeDeclarationConstruct = new Construct('type-decl-construct', [
-  t('colon'),
-  t('identifier')
-])
+/**
+ * 
+ * TYPE DECLARATION
+ * ex: `: int`
+ */
+{
+  GRAMMAR.typeDeclarationConstruct = new Construct('type-decl-construct', [
+    t('colon'),
+    t('identifier')
+  ])
+  translations['type-decl-construct'] = translate('type-decl-construct', {
+    composition: [token('colon'), token('identifier').store('variable-type')],
+    output: []
+  })
+}
 
-GRAMMAR.varOrPrimitive = new Either('variable-or-primitive', [
-  t('identifier'),
-  t('string'),
-  t('number'),
-  t('number-float')
-])
+/**
+ * NUMBER OR STRING
+ */
+{
+  translations['number-or-string'] = translate('number-or-string', {
+    composition: [either([token('number'), token('number-float'), token('string')]).store('value')],
+    output: []
+  })
+}
+
+/**
+ * VARIABLE DECLARATION
+ */
+{
+  const variableAssign = [
+    t('identifier'),
+    new Option('type-declaration', new Ref(GRAMMAR, 'typeDeclarationConstruct')),
+    t('equal'),
+    new Ref(GRAMMAR, 'varOrPrimitive')
+  ]
+
+  GRAMMAR.variableDeclaration = new Construct('variable', [
+    t('let'),
+    ...variableAssign,
+    new Option(
+      'multiple-variable-declaration',
+      new Construct('multiple-variable-declaration-construct', [t('comma'), ...variableAssign])
+    ).repeatOneOrMore(),
+    t('semicolon')
+  ])
+
+  translations['variable'] = translate('variable', {
+    composition: [
+      token('let'),
+      token('identifier').store('variable-name'),
+      ref('type-decl-construct')
+        .option(true)
+        .retrieve('variable-type'),
+      token('equal'),
+      ref('variable-or-primitive').retrieve('varOrPrimitive'),
+      token('semicolon')
+    ],
+    privateScope: true,
+    output: [
+      str()
+        .fromStore('variable-type')
+        .or(str().string('auto')),
+      str().fromStore('variable-name'),
+      str().string('='),
+      str().fromStore('varOrPrimitive'),
+      str().string(';')
+    ]
+  })
+}
+
+/**
+ * PRIMITIVE
+ */
+{
+  GRAMMAR.primitive = new Either('primitive', [t('string'), t('number'), t('number-float')])
+
+  translations['primitive'] = translate('primitive', {
+    composition: [
+      either([token('number'), token('number-float'), token('string')]).store('primitive')
+    ],
+    output: []
+  })
+}
+
+/**
+ * VAR OR PRIMITIVE
+ */
+{
+  GRAMMAR.varOrPrimitive = new Either('variable-or-primitive', [
+    t('identifier'),
+    new Ref(GRAMMAR, 'primitive')
+  ])
+
+  translations['variable-or-primitive'] = translate('variable-or-primitive', {
+    composition: [
+      either([
+        token('identifier').store('varOrPrimitive'),
+        ref('primitive').retrieve('primitive', 'varOrPrimitive')
+      ]).store('varOrPrimitive')
+    ],
+    output: []
+  })
+}
 
 GRAMMAR.parameter = [
-  new Ref(GRAMMAR, 'varOrPrimitive'),
+  t('identifier'),
   new Option('type-decl-option', GRAMMAR.typeDeclarationConstruct)
 ]
 
-GRAMMAR.functionCallConstruct = new Construct('function-call', [
-  t('identifier'),
-  t('left-paren'),
-  new Option(
-    'function-call-args',
-    new Construct('function-call-args-construct', [
+/**
+ * FUNCTION CALL CONSTRUCT
+ */
+{
+  GRAMMAR.functionCallConstruct = new Construct('function-call', [
+    t('identifier'),
+    t('left-paren'),
+    new Option(
+      'function-call-args',
+      new Construct('function-call-args-construct', [
+        ...GRAMMAR.parameter,
+        new Option(
+          'function-call-args-multiple-comma',
+          new Construct('function-call-args-multiple-comma', [t('comma'), ...GRAMMAR.parameter])
+        ).repeatOneOrMore()
+      ])
+    ),
+    t('right-paren'),
+    t('semicolon')
+  ])
+}
+
+{
+  GRAMMAR.functionDeclarationConstruct = new Construct('function-declaration', [
+    t('function'),
+    t('identifier'),
+    t('left-paren'),
+    new Option('parameter', [
       ...GRAMMAR.parameter,
-      new Option(
-        'function-call-args-multiple-comma',
-        new Construct('function-call-args-multiple-comma', [t('comma'), ...GRAMMAR.parameter])
-      ).repeatOneOrMore()
-    ])
-  ),
-  t('right-paren'),
-  t('semicolon')
-])
+      new Option('parameter-multiple', [t('comma'), ...GRAMMAR.parameter]).repeatOneOrMore()
+    ]),
+    t('right-paren'),
+    new Option('type-declaration-option', GRAMMAR.typeDeclarationConstruct),
+    t('left-brace'),
+    new Ref(GRAMMAR, 'body'),
+    t('right-brace')
+  ])
 
-GRAMMAR.variableAssign = [
-  t('identifier'),
-  new Option('type-declaration', GRAMMAR.typeDeclarationConstruct),
-  t('equal'),
-  new Either('number-or-string', [t('number'), t('string'), t('number-float'), GRAMMAR.functionCallConstruct])
-]
+  translations['parameter-construct'] = translate('parameter-construct', {
+    composition: [
+      token('identifier').store('parameter-name'),
+      ref('type-decl-construct').option(true).retrieve('variable-type', 'parameter-type')
+    ],
+    output: [
+      str().fromStore('parameter-type').or(str().string('auto')),
+      str().fromStore('parameter-name')
+    ]
+  })
 
-GRAMMAR.variableDeclaration = new Construct('variable', [
-  t('let'),
-  ...GRAMMAR.variableAssign,
-  new Option(
-    'multiple-variable-declaration',
-    new Construct('multiple-variable-declaration-construct', [
-      t('comma'),
-      ...GRAMMAR.variableAssign
-    ])
-  ).repeatOneOrMore(),
-  t('semicolon')
-])
-
-GRAMMAR.functionDeclarationConstruct = new Construct('function-declaration', [
-  t('function'),
-  t('identifier'),
-  t('left-paren'),
-  new Option('parameter', [
-    ...GRAMMAR.parameter,
-    new Option('parameter-multiple', [t('comma'), ...GRAMMAR.parameter]).repeatOneOrMore()
-  ]),
-  t('right-paren'),
-  new Option('type-declaration-option', GRAMMAR.typeDeclarationConstruct),
-  t('left-brace'),
-  new Ref(GRAMMAR, 'body'),
-  t('right-brace')
-])
+  translations['function-declaration'] = translate('function-declaration', {
+    composition: [
+      token('function'),
+      token('identifier').store('function-name'),
+      token('left-paren'),
+      ref('parameter-construct').option(true),
+      token('right-paren'),
+      ref('type-decl-construct').option(true).retrieve('variable-type'),
+      token('left-brace'),
+      token('right-brace')
+    ],
+    output: [
+      str().fromStore('variable-type').or(str().string('void')),
+      str().fromStore('function-name'),
+      str().string('('),
+      str().string(')'),
+      str().string('{'),
+      str().string('}')
+    ]
+  })
+}
 
 GRAMMAR.comparison = new Either('comparison', [
   t('greater'),
@@ -164,7 +245,7 @@ GRAMMAR.body = new Construct('body', [
 
 const tokenifyString = str => tokenizer(str).map(t => new Token(t.type, t.value, t.pos))
 
-const parseTokens = tokens =>  {
+const parseTokens = tokens => {
   const results = new Result(GRAMMAR.body.name)
   GRAMMAR.body.parse(tokens, 0, results.composition)
 
@@ -174,9 +255,7 @@ const parseTokens = tokens =>  {
 const parseString = str => parseTokens(tokenifyString(str))
 
 const translateElement = el => {
-  if (translations[el.name])
-    return translations[el.name].run(el, true)
-
+  if (translations[el.name]) return translations[el.name].run(el, true)
   else return ''
 }
 

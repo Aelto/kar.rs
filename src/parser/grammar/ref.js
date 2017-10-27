@@ -1,5 +1,9 @@
 class Ref {
   constructor(refSource, name) {
+    if (!name) {
+      throw new error('Ref needs a name')
+    }
+
     this.refSource = refSource
     this._name = name
   }

@@ -13,8 +13,27 @@ module.exports = input => {
     )
   }
 
-  const content = results.composition[0].composition[0].composition[0].composition
-  if (content.length) {
-    console.log(`\n${chalk.green('Output:')}\n${translateElement(content[0])}`)
+  console.log(results.composition[0].composition)
+
+  let output = ''
+  for (const el of results.composition[0].composition) {
+    console.log(el)
+    const content = el.composition[0].composition
+    
+
+    if (content.length) {
+      output += translateElement(content[0])
+      console.log(`\n${chalk.green('Output:')}\n${output}`)
+    }
   }
+
+  
+
+  return `
+
+int main() {
+  ${output}
+}
+
+  `
 }

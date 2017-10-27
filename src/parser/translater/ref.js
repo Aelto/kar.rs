@@ -65,8 +65,10 @@ class Ref {
    * the variables extracted by the referenced element
    * @param {string} name variable name
    */
-  retrieve(name) {
-    this.shouldRetrieveMap[name] = true
+  retrieve(name, alias = null) {
+    this.shouldRetrieveMap[name] = alias === null
+      ? name
+      : alias
 
     return this
   }
@@ -95,12 +97,14 @@ class Ref {
   }
 
   retrieveVariable(name, value) {
-    this.insertIntoScope(this.scope, name, value)
+    this.insertIntoScope(this.scope, this.shouldRetrieveMap[name], value)
 
     return this
   }
 
   compare(compared) {
+    return this.ref.compare(compared)
+
     if (Array.isArray(compared) && compared.length === 1) {
       return this.ref.compare(compared[0])
     } else if (!Array.isArray) return this.ref.compare(compared)

@@ -172,8 +172,10 @@ class Token {
   }
 
   run(token, scope) {
-    if (token.constructor.name !== 'Token')
-      throw new Error(`expected Token, found ${token.constuctor.name}`)
+    if (token.constructor.name !== 'Token') {
+      console.log(token)
+      throw new Error(`expected Token, found ${token.constructor.name}`)
+    }
 
     if (this.ref === null) {
       if (this.shouldStore()) {

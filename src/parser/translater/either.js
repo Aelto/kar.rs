@@ -19,7 +19,7 @@ class Either extends Token {
     if (result.constructor.name === 'Token') {
       if (composition.compare(result)) return true
     } else {
-      // TODO
+      if (composition.compare(result)) return true
     }
 
     return false
@@ -44,12 +44,12 @@ class Either extends Token {
         }
       } else {
         if (this.shouldBeRetrieved()) {
-          this.getRetrieved(result.value)
+          this.getRetrieved(result.value || result.composition[0].value)
         }
       }
 
     } else {
-      console.log('no matching result found in Either')
+      console.log('no matching result found in Either ')
     }
   }
 }

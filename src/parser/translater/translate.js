@@ -48,8 +48,7 @@ class Translate {
       const selfEl = this.composition[selfCompositionIndex]
 
       if (!selfEl.compare(resultEl)) {
-        if (resultEl.isOption)
-          resultCompositionIndex -= 1
+        if (resultEl.isOption) resultCompositionIndex -= 1
         else return false
       }
 
@@ -72,8 +71,12 @@ class Translate {
       const selfEl = this.composition[selfCompositionIndex]
 
       if (resultEl.name === selfEl.name || resultEl.type === selfEl.name) {
-        if (selfEl.constructor.name === 'Ref') selfEl.run(resultEl, this.scope)
-        else selfEl.setRef(this.ref).run(resultEl, this.scope)
+        if (selfEl.constructor.name === 'Ref') {
+          console.log('...')
+          selfEl.run(resultEl, this.scope)
+        } else {
+          selfEl.setRef(this.ref).run(resultEl, this.scope)
+        }
       } else {
         if (selfEl.isOption) {
           resultCompositionIndex -= 1
@@ -85,6 +88,8 @@ class Translate {
       resultCompositionIndex += 1
       selfCompositionIndex += 1
     }
+
+    console.log(this.name, this.scope)
 
     if (!first) return
 
