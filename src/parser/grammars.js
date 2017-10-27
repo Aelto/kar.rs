@@ -181,7 +181,7 @@ GRAMMAR.parameter = [
       token('function'),
       token('identifier').store('function-name'),
       token('left-paren'),
-      ref('parameter-construct').option(true),
+      ref('parameter-construct').option(true).storeOutput('parameters'),
       token('right-paren'),
       ref('type-decl-construct').option(true).retrieve('variable-type'),
       token('left-brace'),
@@ -191,6 +191,7 @@ GRAMMAR.parameter = [
       str().fromStore('variable-type').or(str().string('void')),
       str().fromStore('function-name'),
       str().string('('),
+      str().fromStore('parameters'),
       str().string(')'),
       str().string('{'),
       str().string('}')

@@ -1,7 +1,7 @@
 
 
-int main() {
-  auto a = 10 ; void main ( ) { } 
-}
+  auto a = 5 ; 
+void main ( auto argc  ) { } 
+
 
   

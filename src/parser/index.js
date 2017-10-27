@@ -22,7 +22,7 @@ module.exports = input => {
     
 
     if (content.length) {
-      output += translateElement(content[0])
+      output += translateElement(content[0]) + '\n'
       console.log(`\n${chalk.green('Output:')}\n${output}`)
     }
   }
@@ -31,9 +31,7 @@ module.exports = input => {
 
   return `
 
-int main() {
   ${output}
-}
 
   `
 }

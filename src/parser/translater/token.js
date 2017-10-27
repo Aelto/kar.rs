@@ -173,11 +173,11 @@ class Token {
 
   run(token, scope) {
     if (token.constructor.name !== 'Token') {
-      console.log(token)
       throw new Error(`expected Token, found ${token.constructor.name}`)
     }
 
     if (this.ref === null) {
+
       if (this.shouldStore()) {
         // this.insertIntoStore(token.value)
         this.insertIntoScope(token.value, scope)
@@ -185,6 +185,10 @@ class Token {
     } else {
       if (this.shouldBeRetrieved()) {
         this.getRetrieved(token.value)
+      }
+
+      if (this.shouldStore()) {
+        this.insertIntoScope(token.value, scope)
       }
     }
 

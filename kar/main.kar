@@ -1,6 +1,5 @@
 
-let a = 10;
+let a = 5;
 
-fn main(a: int) {
-
+fn main(argc) {
 }

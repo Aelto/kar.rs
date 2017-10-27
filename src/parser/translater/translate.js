@@ -72,7 +72,6 @@ class Translate {
 
       if (resultEl.name === selfEl.name || resultEl.type === selfEl.name) {
         if (selfEl.constructor.name === 'Ref') {
-          console.log('...')
           selfEl.run(resultEl, this.scope)
         } else {
           selfEl.setRef(this.ref).run(resultEl, this.scope)
@@ -89,15 +88,11 @@ class Translate {
       selfCompositionIndex += 1
     }
 
-    console.log(this.name, this.scope)
-
-    if (!first) return
-
     let out = ''
     for (const outputElement of this.output) {
       out += outputElement.run(this.scope) + ' '
     }
-
+    
     return out
   }
 }

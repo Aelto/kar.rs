@@ -6,6 +6,8 @@ class Ref {
     this._refName = refName
     this.shouldRetrieveMap = {}
 
+    this.storeOutputName = null
+
     this.scope = null
 
     this.isOption = false
@@ -102,6 +104,26 @@ class Ref {
     return this
   }
 
+  storeOutput(name) {
+    this.storeOutputName = name
+
+    return this
+  }
+
+  shouldStoreOutput(name) {
+    return this.shouldStoreOutput !== null
+  }
+
+  storeOutputIntoScope(value) {
+    this.insertIntoScope(this.scope, this.storeOutputName, value)
+
+    return this
+  }
+
+  getCurrentStoreOutput() {
+    return this.scope[this.storeOutputName] || ''
+  }
+
   compare(compared) {
     return this.ref.compare(compared)
 
@@ -120,7 +142,13 @@ class Ref {
       ? Object.assign({}, scope)
       : scope
 
-    this.ref.setRef(this).run(result, this.scope)
+    const output = this.ref.setRef(this).run(result, this.scope)
+    // console.log(output)
+
+    if (this.shouldStoreOutput()) {
+      this.storeOutputIntoScope(this.getCurrentStoreOutput() + output)
+    }
+
     this.scope = null
   }
 }
