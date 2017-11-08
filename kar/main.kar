@@ -1,5 +1,6 @@
 
 let a = 5;
 
-fn main(argc) {
+fn main(argc: int, argc: list): string {
+  
 }

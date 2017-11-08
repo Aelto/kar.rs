@@ -22,6 +22,8 @@ class Translate {
 
     this.output = options.output
 
+    this.shouldRepeat = false
+
     /**
      * 
      */
@@ -30,6 +32,12 @@ class Translate {
 
   setRef(ref = null) {
     this.ref = ref
+
+    return this
+  }
+
+  repeat(bool = false) {
+    this.shouldRepeat = bool
 
     return this
   }
@@ -48,7 +56,7 @@ class Translate {
       const selfEl = this.composition[selfCompositionIndex]
 
       if (!selfEl.compare(resultEl)) {
-        if (resultEl.isOption) resultCompositionIndex -= 1
+        if (selfEl.isOption) resultCompositionIndex -= 1
         else return false
       }
 
@@ -92,7 +100,7 @@ class Translate {
     for (const outputElement of this.output) {
       out += outputElement.run(this.scope) + ' '
     }
-    
+
     return out
   }
 }

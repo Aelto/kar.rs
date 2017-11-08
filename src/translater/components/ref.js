@@ -13,6 +13,12 @@ class Ref {
     this.isOption = false
 
     this.isScopePrivate = false
+
+    this.shouldRepeat = false
+
+    this.orList = []
+
+    this.overrideRef = null
   }
 
   get ref() {
@@ -23,6 +29,8 @@ class Ref {
   }
 
   get name() {
+    if (this.ref === null)
+      return this._refName
     return this.ref.name
   }
 
@@ -81,6 +89,12 @@ class Ref {
     return this
   }
 
+  repeat(bool = false) {
+    this.shouldRepeat = bool
+
+    return this
+  }
+
   privateScope(bool = false) {
     this.isScopePrivate = bool
 
@@ -95,61 +109,49 @@ class Ref {
    * @return {bool} false if the variable with the supplied name would not be extracted
    */
   shouldRetrieve(name) {
-    return this.shouldRetrieveMap[name] || false
-  }
+    if (this.overrideRef === null) {
+      return !!this.shouldRetrieveMap[name] || false
 
-  retrieveVariable(name, value) {
-    this.insertIntoScope(this.scope, this.shouldRetrieveMap[name], value)
-
-    return this
-  }
-
-  storeOutput(name) {
-    this.storeOutputName = name
-
-    return this
-  }
-
-  shouldStoreOutput(name) {
-    return this.shouldStoreOutput !== null
-  }
-
-  storeOutputIntoScope(value) {
-    this.insertIntoScope(this.scope, this.storeOutputName, value)
-
-    return this
-  }
-
-  getCurrentStoreOutput() {
-    return this.scope[this.storeOutputName] || ''
-  }
-
-  compare(compared) {
-    return this.ref.compare(compared)
-
-    if (Array.isArray(compared) && compared.length === 1) {
-      return this.ref.compare(compared[0])
-    } else if (!Array.isArray) return this.ref.compare(compared)
-    else if (Array.isArray(compared) && compared.length > 1) return this.ref.compare(compared)
-
-    return false
-  }
-
-  run(result, scope) {
-    if (this.ref === null) throw new Error(`ref pointing to unknown element: ${this._refName}`)
-
-    this.scope = this.isScopePrivate
-      ? Object.assign({}, scope)
-      : scope
-
-    const output = this.ref.setRef(this).run(result, this.scope)
-    // console.log(output)
-
-    if (this.shouldStoreOutput()) {
-      this.storeOutputIntoScope(this.getCurrentStoreOutput() + output)
     }
 
-    this.scope = null
+    else {
+      return !!this.overrideRef.shouldRetrieveMap[this.shouldRetrieveMap[name]]
+    }
+
+  }
+
+  retrieveVariable(scope, name, value) {
+    if (this.overrideRef === null) {
+      scope[this.shouldRetrieveMap[name]] = value
+
+    }
+
+    else {
+      scope[this.overrideRef.shouldRetrieveMap[this.shouldRetrieveMap[name]]] = value
+    }
+
+    return this
+  }
+
+  setRef(ref = null) {
+    this.overrideRef = ref
+
+    return this
+  }
+
+  run(tree, parentOutput) {
+
+    if (this.ref !== null) {
+      console.log(this.name)
+      return this.ref.setRef(this).run(
+        tree, 
+        this.isScopePrivate
+          ? Object.assign({ scope: {} }, parentOutput)
+          : parentOutput
+      )
+    }
+
+    return { success: false, str: '', scope: {}, forward: 0 }
   }
 }
 

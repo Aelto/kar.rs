@@ -50,22 +50,22 @@ module.exports = input => {
         break
 
       case '(':
-        addToken('left-paren', '(')
+        addToken('paren-left', '(')
         current++
         break
 
       case ')':
-        addToken('right-paren', ')')
+        addToken('paren-right', ')')
         current++
         break
 
       case '{':
-        addToken('left-brace', '{')
+        addToken('brace-left', '{')
         current++
         break
 
       case '}':
-        addToken('right-brace', '}')
+        addToken('brace-right', '}')
         current++
         break
 

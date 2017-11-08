@@ -233,16 +233,47 @@ GRAMMAR.ifStatementConstruct = new Construct('if-statement', [
   t('right-brace')
 ])
 
-GRAMMAR.body = new Construct('body', [
-  new Option('body', [
-    new Either('body-either', [
-      GRAMMAR.ifStatementConstruct,
-      GRAMMAR.functionDeclarationConstruct,
-      GRAMMAR.variableDeclaration,
-      GRAMMAR.functionCallConstruct
-    ])
-  ]).repeatOneOrMore()
-])
+
+{
+  GRAMMAR.body = new Construct('body', [
+    new Option('body', [
+      new Either('body-either', [
+        GRAMMAR.ifStatementConstruct,
+        GRAMMAR.functionDeclarationConstruct,
+        GRAMMAR.variableDeclaration,
+        GRAMMAR.functionCallConstruct
+      ])
+    ]).repeatOneOrMore()
+  ])
+
+  translations['body'] = translate('body', {
+    composition: [
+      ref('body-construct').retrieve('body-construct-str')
+    ],
+    output: []
+  })
+
+  translations['body-construct'] = translate('body-construct', {
+    composition: [
+      ref('body-either').repeat(true).retrieve('body-either-var')
+    ],
+    output: []
+  })
+
+  translations['body-either'] = translate('body-either', {
+    composition: [
+      ref('function-declaration').storeOutput('body-either-var')
+        .or(
+          ref('variable').storeOutput('body-either-var')
+        )
+      // either([
+      //   ref('function-declaration').storeOutput('body-either-var'),
+      //   ref('variable').storeOutput('body-either-var')
+      // ])
+    ],
+    output: []
+  })
+}
 
 const tokenifyString = str => tokenizer(str).map(t => new Token(t.type, t.value, t.pos))
 
@@ -260,7 +291,5 @@ const translateElement = el => {
   else return ''
 }
 
-// exports.grammar = GRAMMAR
-// exports.translations = translations
 exports.parseString = parseString
 exports.translateElement = translateElement

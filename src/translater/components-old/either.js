@@ -33,9 +33,9 @@ class Either extends Token {
     return null
   }
 
-  run(result) {
+  run(result, scope) {
     const match = this.getMatchingComposition(result)
-    
+
     if (match !== null) {
       if (this.ref === null) {
         if (this.shouldStore()) {
@@ -43,8 +43,12 @@ class Either extends Token {
           this.insertIntoScope(match.value, scope)
         }
       } else {
-        if (this.shouldBeRetrieved()) {
-          this.getRetrieved(result.value || result.composition[0].value)
+        if (match.constructor.name === 'Token') {
+          if (this.shouldBeRetrieved()) {
+            this.getRetrieved(result.value || result.composition[0].value)
+          }
+        } else {
+          return match.run(result, scope)
         }
       }
 
