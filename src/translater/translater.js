@@ -8,6 +8,8 @@ class Element {
 
     this.isOption = false
 
+    this.isRepeat = false
+
     this.translateFunction = null
 
     this.flagName = null
@@ -19,6 +21,12 @@ class Element {
 
   option(bool = false) {
     this.isOption = bool
+
+    return this
+  }
+
+  repeat(bool = false) {
+    this.isRepeat = bool
 
     return this
   }
@@ -60,34 +68,46 @@ class Container extends Element {
 
     while (true) {
       const this_child = this.children[this_index]
-      const cont_child = ast.group[ast_index]
+      const ast_child = ast.group[ast_index]
 
-      if (!cont_child && !this_child) {
-        break
-      }
-
-      // console.log(`- comparing ${this_child.name} & ${cont_child.name || cont_child.type}`)
-
-      if (!this_child && cont_child) {
+      if (!this_child) {
         break
       }
 
       // no more items in the incoming ast,
       // while this ast expected some more
-      if (!cont_child && !this_child.isOption) {
+      if (!ast_child && !this_child.isOption) {
         return false
       }
 
       // this ast's child compare function returned
       // false, which means the two asts do not match
-      const comparison = this_child.compare(cont_child)
+      const comparison = this_child.compare(ast_child)
       if (!comparison) {
         return false
       }
 
       if (actionOnCompareTrue !== null) {
-        actionOnCompareTrue.bind(this)(this_child, cont_child)
-        // this_child.run(cont_child)
+        actionOnCompareTrue.bind(this)(this_child, ast_child)
+      }
+
+      while (ast_child.isRepeat) {
+        const ast_child_repeat = ast.group[ast_index + 1]
+
+        if (!ast_child_repeat) {
+          break
+        }
+
+        const comparison = this_child.compare(this_child, ast_child_repeat)
+        if (!comparison) {
+          break
+        }
+
+        if (actionOnCompareTrue !== null) {
+          actionOnCompareTrue.bind(this)(this_child, ast_child)
+        }
+
+        ast_index += 1
       }
 
       this_index += 1
@@ -98,8 +118,8 @@ class Container extends Element {
   }
 
   run(ast) {
-    const comparison = this.compare(ast, (this_child, cont_child) => {
-      if (this_child.run) this_child.run(cont_child)
+    const comparison = this.compare(ast, (this_child, ast_child) => {
+      if (this_child.run) this_child.run(ast_child)
     })
 
     if (comparison && this.translateFunction !== null) {
@@ -110,13 +130,13 @@ class Container extends Element {
   getFirstFlagged(ast, flag) {
     let out = null
 
-    const comparison = this.compare(ast, (this_child, cont_child) => {
+    const comparison = this.compare(ast, (this_child, ast_child) => {
       if (this_child.flagName === flag) {
-        return out = { grammar: this_child, ast: cont_child }
+        return out = { grammar: this_child, ast: ast_child }
       }
 
       if (this_child.getFirstFlagged) {
-        out = this_child.getFirstFlagged(cont_child, flag)
+        out = this_child.getFirstFlagged(ast_child, flag)
       }
     })
 
@@ -131,7 +151,9 @@ const grammar = new Container('program', [
     new Element('equal'),
     new Element('number').flag('var-value'),
     new Element('semicolon'),
-  ]).translate((container, ast) => {
+  ]).option(true)
+    .repeat(true)
+    .translate((container, ast) => {
     const varName = container.getFirstFlagged(ast, 'var-name')
     const varValue = container.getFirstFlagged(ast, 'var-value')
 
