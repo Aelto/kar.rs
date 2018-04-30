@@ -135,7 +135,7 @@ class Container extends Element {
         return out = { grammar: this_child, ast: ast_child }
       }
 
-      if (this_child.getFirstFlagged) {
+      if (this_child.getFirstFlagged && out === null) {
         out = this_child.getFirstFlagged(ast_child, flag)
       }
     })
@@ -143,6 +143,10 @@ class Container extends Element {
     return out
   }
 }
+
+
+const cont = (n, c) => new Container(n, c)
+const el = n => new Element(n)
 
 const grammar = new Container('program', [
   new Container('variable', [
@@ -161,6 +165,42 @@ const grammar = new Container('program', [
       console.log(`auto ${varName.ast.value} = ${varValue.ast.value}`)
     }
   }),
+  cont('function-declaration', [
+    el('function'),
+    el('identifier').flag('function-name'),
+    el('paren-left'),
+    cont('arguments-declaration', [
+      cont('argument-declaration', [
+        el('identifier'),
+        cont('type-declaration', [
+          el('colon'),
+          el('identifier')
+        ])
+      ]),
+      cont('next-argument-declaration', [
+        el('comma'),
+        cont('argument-declaration', [
+          el('identifier'),
+          cont('type-declaration', [
+            el('colon'),
+            el('identifier')
+          ])
+        ])
+      ])
+    ]),
+    el('paren-right'),
+    cont('type-declaration', [
+      el('colon'),
+      el('identifier').flag('function-return-type')
+    ]),
+    el('brace-left'),
+    el('brace-right')
+  ]).translate((container, ast) => {
+    const functionName = container.getFirstFlagged(ast, 'function-name')
+    const functionReturnType = container.getFirstFlagged(ast, 'function-return-type')
+
+    console.log(`${functionReturnType.ast.value || 'void'} ${functionName.ast.value} {}`)
+  })
 ])
 
 const run = (ast, depth = 1) => {
@@ -173,7 +213,7 @@ const run = (ast, depth = 1) => {
 }
 
 module.exports = (AST) => {
-  console.log(run(AST))
+  // console.log(run(AST))
   grammar.run(AST)
-
+  return ''
 }
