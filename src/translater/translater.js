@@ -142,19 +142,33 @@ class Container extends Element {
 
     return out
   }
+
+  getAllFlagged(ast, flag, out = []) {
+    const comparison = this.compare(ast, (this_child, ast_child) => {
+      if (this_child.flagName === flag) {
+        out.push({ grammar: this_child, ast: ast_child })
+      }
+
+      if (this_child.getAllFlagged) {
+        this_child.getAllFlagged(ast_child, flag, out)
+      }
+    })
+
+    return out
+  }
 }
 
 
 const cont = (n, c) => new Container(n, c)
 const el = n => new Element(n)
 
-const grammar = new Container('program', [
-  new Container('variable', [
-    new Element('let'),
-    new Element('identifier').flag('var-name'),
-    new Element('equal'),
-    new Element('number').flag('var-value'),
-    new Element('semicolon'),
+const grammar = cont('program', [
+  cont('variable', [
+    el('let'),
+    el('identifier').flag('var-name'),
+    el('equal'),
+    el('number').flag('var-value'),
+    el('semicolon'),
   ]).option(true)
     .repeat(true)
     .translate((container, ast) => {
@@ -171,21 +185,21 @@ const grammar = new Container('program', [
     el('paren-left'),
     cont('arguments-declaration', [
       cont('argument-declaration', [
-        el('identifier'),
+        el('identifier').flag('arg-name'),
         cont('type-declaration', [
           el('colon'),
-          el('identifier')
-        ])
-      ]),
+          el('identifier').flag('arg-type-name')
+        ]).flag('arg-type')
+      ]).flag('arg-declaration'),
       cont('next-argument-declaration', [
         el('comma'),
         cont('argument-declaration', [
-          el('identifier'),
+          el('identifier').flag('arg-name'),
           cont('type-declaration', [
             el('colon'),
-            el('identifier')
-          ])
-        ])
+            el('identifier').flag('arg-type-name')
+          ]).flag('arg-type')
+        ]).flag('arg-declaration')
       ])
     ]),
     el('paren-right'),
@@ -198,8 +212,17 @@ const grammar = new Container('program', [
   ]).translate((container, ast) => {
     const functionName = container.getFirstFlagged(ast, 'function-name')
     const functionReturnType = container.getFirstFlagged(ast, 'function-return-type')
+    const firstArg = container.getFirstFlagged(ast, 'arg-name')
+    const args = container.getAllFlagged(ast, 'arg-declaration')
+      .map(arg => {
+        const arg_name = arg.grammar.getFirstFlagged(arg.ast, 'arg-name').ast.value
+        const arg_type = arg.grammar.getFirstFlagged(arg.ast, 'arg-type-name').ast.value || 'auto'
 
-    console.log(`${functionReturnType.ast.value || 'void'} ${functionName.ast.value} {}`)
+        return `${arg_type} ${arg_name}`
+      })
+      .join(', ')
+
+    console.log(`${functionReturnType.ast.value || 'void'} ${functionName.ast.value} (${args}) {}`)
   })
 ])
 
