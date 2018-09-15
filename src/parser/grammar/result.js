@@ -27,9 +27,9 @@ class Result {
 
     for (const child of origin.group) {
       if (child.constructor.name !== 'Result') {
-        out += `${' '.repeat(deep)}${chalk.grey(child.type.padEnd(15, ' '))} ${first
+        out += `${' '.repeat(deep)}${chalk.white(child.type.padEnd(15, ' '))} ${first
           ? chalk.magenta('|')
-          : chalk.grey('|')} ${child.value}${first ? chalk.green(' < ') + origin.name : ''}\n`
+          : chalk.white('|')} ${child.value}${first ? chalk.green(' < ') + origin.name : ''}\n`
         first = false
       } else if (child.group) {
         const end = this.getPrint(child, deep + 1)
