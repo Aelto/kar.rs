@@ -1,4 +1,6 @@
 
+const Element = require('./element')
+
 const newFlagSearchResult = result =>
   new Proxy(result, {
     get(obj, prop) {
