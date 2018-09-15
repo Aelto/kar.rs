@@ -35,14 +35,18 @@ grammar['function-declaration'] = new Elem('function-declaration').group([
   token('brace-right')
 ])
 
-grammar["variable"] = new Elem("variable").group([
-  token("let"),
+grammar["variable-assignment"] = new Elem("variable-assignment").group([
   token("identifier"),
   ref("type-declaration").option(true),
   token("equal"),
   token("number")
     .or(token('string'))
-    .or(token('number-float')),
+    .or(token('number-float'))
+])
+
+grammar["variable"] = new Elem("variable").group([
+  token("let"),
+  ref("variable-assignment"),
   token('semicolon')
 ])
 

@@ -214,11 +214,12 @@ class Elem {
           tokenRepeatLoop: do {
             subGroup = currentElem.parse(source, position + tokensIndex, result)
             
-            if (subGroup.group.length && subGroup.group.length >= this.nestedElemLength(currentElem))  {
+            const length = subGroup.nestedLength && subGroup.nestedLength()
+            if (length && length >= this.nestedElemLength(currentElem))  {
               group.group.push(subGroup)
               
               // minus one because we automatically add 1 at the end of the loop
-              tokensIndex += this.nestedLength(subGroup) - (currentElem.doesRepeat ? 0 : 1)
+              tokensIndex += subGroup.nestedLength() - (currentElem.doesRepeat ? 0 : 1)
             }
             else {
     

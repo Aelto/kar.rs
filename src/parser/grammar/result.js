@@ -55,6 +55,22 @@ class Result {
 
     return arr
   }
+
+  nestedLength(layer = this.group) {
+    let layer_length = 0
+
+    for (const child of layer) {
+      if (child instanceof Result) {
+        layer_length += this.nestedLength(child.group)
+      }
+
+      else {
+        layer_length += 1
+      }
+    }
+
+    return layer_length
+  }
 }
 
 module.exports = Result
