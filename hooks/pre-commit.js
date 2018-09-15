@@ -15,7 +15,7 @@ function recursive_lookup(dir, action = () => {}) {
     const child_path = path.join(dir, child)
 
     if (fs.statSync(child_path).isDirectory()) {
-      recursive_lookup(child_path)
+      recursive_lookup(child_path, action)
     }
 
     else {
@@ -58,9 +58,9 @@ function main() {
 
   if (files_with_error.length) {
     const cancel_message = files_with_error
-      .map(error => `forbidden words [${error.forbidden_words.join(', ')}] found in file "${error.file_path}"`)
+      .map(error => `forbidden words [${error.forbidden_words.map(word => `"${word}"`).join(', ')}] found in file "${error.file_path}"`)
 
-    cancel_commit(cancel_message)
+    cancel_commit(`${cancel_message.join('\n')}\ncommit cancelled.`)
   }
 }
 

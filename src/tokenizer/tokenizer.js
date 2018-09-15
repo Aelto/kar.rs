@@ -322,7 +322,3 @@ function isToken(tokenRegex, slice) {
 function printLine(input, line_y) {
   return input.split('\n')[line_y - 1]
 }
-
-function pointAt(input, line_x) {
-  // TODO
-}
