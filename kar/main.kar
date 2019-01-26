@@ -1,6 +1,14 @@
+module iostream;
+
+use std::{cout, endl};
 
 fn main() -> int {
-  let a = 10;
+  cout << "hello, world!\n";
+
+  let x = 10;
+  let y = 20.5;
+
+  cout << x + y << endl;
 
   return 0;
 }

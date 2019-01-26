@@ -7,7 +7,11 @@ windows:
   args:
     - /EHsc
     - /std:c++17
+    - /DDEBUG
   commands: 
+    before: [
+      del *.obj
+    ]
     after: [
       main kar/main.kar
     ]
