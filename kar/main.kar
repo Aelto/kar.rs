@@ -1,2 +1,6 @@
 
-let a = 10;
+fn main() -> int {
+  let a = 10;
+
+  return 0;
+}

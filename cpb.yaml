@@ -1,0 +1,23 @@
+project:
+  name: hello-world
+  bin: bin
+
+windows:
+  compiler: cl
+  args:
+    - /EHsc
+    - /std:c++17
+  commands: 
+    after: [
+      main kar/main.kar
+    ]
+
+linux:
+  compiler: g++
+  args:
+    - -Wall
+
+shared:
+  directory: src/
+  files:
+    - main.cpp
