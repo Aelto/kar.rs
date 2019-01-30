@@ -17,7 +17,8 @@ enum GrammarType {
   G_None,
 
   G_program,
-  G_moduleImport
+  G_moduleImport,
+  G_addition
 };
 
 /**
@@ -153,25 +154,56 @@ bool token_match(Token * token, ParserNode * parser_node) {
 }
 
 int match_parser_node(std::vector<Token> & tokens, int tokens_i, ParserNode * parser_node) {
-  
   switch (parser_node->type)
   {
     case match:
       {
         auto * token = &tokens[tokens_i];
+        int or_index = -1;
 
         do {
-          bool do_match = token_match(token, parser_node);
+          if (parser_node->or_list.empty()) {
+            bool do_match = token_match(token, parser_node);
 
-          // token did not match
-          if (!do_match) {
-            // return unchanged position
-            return tokens_i;
+            // token did not match
+            if (!do_match) {
+              // return unchanged position
+                return tokens_i;
+            }
+            
+            // move forward by 1 token
+            ++tokens_i;
           }
+          else {
+            ParserNode * used_parser_node = parser_node;
 
-          // move forward by 1 token
-          ++tokens_i;
-        } while (parser_node->is_repeatable);
+            if (or_index >= 0 && or_index < parser_node->or_list.size()) {
+              used_parser_node = &parser_node->or_list[or_index];
+
+              int new_tokens_i = match_parser_node(tokens, tokens_i, used_parser_node);
+
+              if (new_tokens_i > tokens_i) {
+                tokens_i = new_tokens_i;
+                or_index = -1;
+              }
+              else {
+                ++or_index;
+              }
+            }
+            else {
+              bool do_match = token_match(token, parser_node);
+
+              // token did not match
+              if (!do_match) {
+                // return unchanged position
+                  ++or_index;
+              }
+              
+              // move forward by 1 token
+              ++tokens_i;
+            }
+          }
+        } while (parser_node->is_repeatable || !parser_node->or_list.empty() && or_index < parser_node->or_list.size());
       }
       break;
 
@@ -239,7 +271,16 @@ void parser(std::vector<Token> & tokens) {
       token(Identifier)
     });
 
-  auto * current_parser_node = &grammar_store[G_moduleImport];
+  grammar_store[G_addition] = ParserNode(container, &grammar_store)
+    .group(std::vector<ParserNode> {
+      token(Number)
+        .or(token(NumberFloat)),
+      token(Plus),
+      token(Number)
+        .or(token(NumberFloat)),
+    });
+
+  auto * current_parser_node = &grammar_store[G_addition];
   int tokens_i = 0;
 
   while (true) {
