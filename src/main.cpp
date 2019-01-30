@@ -6,6 +6,7 @@
 
 #include "tokenizer/tokenizer.h"
 #include "tokenizer/print_token.h"
+#include "parser/parser.h"
 
 int main(int argc, char * argv[]) {
   if (argc < 2) {
@@ -23,6 +24,7 @@ int main(int argc, char * argv[]) {
   }
 
   auto tokens = tokenizer(file);
+  file.close();
 
   for (auto & token : tokens) {
     print_token(token);
@@ -33,7 +35,7 @@ int main(int argc, char * argv[]) {
     }
   }
 
-  file.close();
+  parser(tokens);
 
   return 0;
 }

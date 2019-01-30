@@ -55,8 +55,8 @@ enum TokenType {
   Do,
   While,
   Return,
-  Import,
-  Extern,
+  Module,
+  Use,
   And,
   Or
 };

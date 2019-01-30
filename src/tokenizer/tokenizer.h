@@ -263,17 +263,23 @@ std::vector<Token> tokenizer(std::ifstream & file) {
           }
 
           //#region keywords 
-          else if (c == 'f' && line.find("fn", pos) == pos) {
+          else if (c == 'f' && line.find("fn ", pos) == pos) {
             tokens.emplace_back(TokenType::Function, global_pos);
 
             pos += 2;
             global_pos += 2;
           }
-          else if (c == 'l' && line.find("let", pos) == pos) {
+          else if (c == 'l' && line.find("let ", pos) == pos) {
             tokens.emplace_back(TokenType::Let, global_pos);
 
             pos += 3;
             global_pos += 3;
+          }
+          else if (c == 'm' && line.find("module ", pos) == pos) {
+            tokens.emplace_back(TokenType::Module, global_pos);
+
+            pos += 6;
+            global_pos += 6;
           }
           //#endregion
 

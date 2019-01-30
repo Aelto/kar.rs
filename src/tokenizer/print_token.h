@@ -108,6 +108,10 @@ void print_token(Token & token) {
     case TokenType::PlusEqual:
       LOG("plus-equal");
       break;
+
+    case TokenType::Module:
+      LOG("module");
+      break;
   
     default:
       break;
