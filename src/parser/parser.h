@@ -18,7 +18,8 @@ enum GrammarType {
 
   G_program,
   G_moduleImport,
-  G_addition
+  G_addition,
+  G_useStatement
 };
 
 /**
@@ -193,14 +194,14 @@ int match_parser_node(std::vector<Token> & tokens, int tokens_i, ParserNode * pa
             else {
               bool do_match = token_match(token, parser_node);
 
-              // token did not match
               if (!do_match) {
                 // return unchanged position
                   ++or_index;
               }
-              
-              // move forward by 1 token
-              ++tokens_i;
+              else {
+                // move forward by 1 token
+                ++tokens_i;
+              }
             }
           }
         } while (parser_node->is_repeatable || !parser_node->or_list.empty() && or_index < parser_node->or_list.size());
@@ -209,49 +210,145 @@ int match_parser_node(std::vector<Token> & tokens, int tokens_i, ParserNode * pa
 
     case reference:
       {
-        auto * referenced_parser_node = &parser_node->store->at(parser_node->ref_to);
+        int or_index = -1;
 
         do {
-          int new_tokens_i = match_parser_node(tokens, tokens_i, referenced_parser_node);
+          if (parser_node->or_list.empty()) {
+            auto * referenced_parser_node = &parser_node->store->at(parser_node->ref_to);
 
-          // same position as before, it means it did not match.
-          if (new_tokens_i == tokens_i) {
-            return tokens_i;
+            int new_tokens_i = match_parser_node(tokens, tokens_i, referenced_parser_node);
+
+            // same position as before, it means it did not match.
+            if (new_tokens_i == tokens_i) {
+              return tokens_i;
+            }
+
+            tokens_i = new_tokens_i;
+          }
+          else {
+
+            if (or_index >= 0 && or_index < parser_node->or_list.size()) {
+              ParserNode * used_parser_node = parser_node;
+              used_parser_node = &parser_node->or_list[or_index];
+
+              int new_tokens_i = match_parser_node(tokens, tokens_i, used_parser_node);
+
+              if (new_tokens_i > tokens_i) {
+                tokens_i = new_tokens_i;
+                or_index = -1;
+              }
+              else {
+                ++or_index;
+              }
+            }
+            else {
+              auto * referenced_parser_node = &parser_node->store->at(parser_node->ref_to);
+
+              int new_tokens_i = match_parser_node(tokens, tokens_i, referenced_parser_node);
+
+              // same position as before, it means it did not match.
+              if (new_tokens_i == tokens_i) {
+                // moving or_index forward means all ParserNodes before did not match
+                ++or_index;
+              }
+              else {
+                tokens_i = new_tokens_i;
+                or_index = -1;
+              }
+            }
           }
 
-          tokens_i = new_tokens_i;
-        } while (parser_node->is_repeatable);
+          if (or_index >= 0 && or_index > parser_node->or_list.size()) {
+            break;
+          }
+        } while (parser_node->is_repeatable || !parser_node->or_list.empty() && or_index < parser_node->or_list.size());
       }
       break;
 
     case container:
-      do {
-        // the variable will be the new position returned if every child matched
-        int final_tokens_i = tokens_i;
-        for (auto & child_parser_node : parser_node->group_list) {
-          int new_tokens_i = match_parser_node(tokens, final_tokens_i, &child_parser_node);
+      {
+        int or_index = -1;
 
-          // did not match
-          if (new_tokens_i == final_tokens_i) {
-            // and the child was not optional, quick-return
-            if (!child_parser_node.is_optional) {
-              return tokens_i;
+        do {
+          if (parser_node->or_list.empty()) {
+            // the variable will be the new position returned if every child matched
+            int final_tokens_i = tokens_i;
+
+            for (auto & child_parser_node : parser_node->group_list) {
+              int new_tokens_i = match_parser_node(tokens, final_tokens_i, &child_parser_node);
+
+              // did not match
+              if (new_tokens_i == final_tokens_i) {
+                // and the child was not optional, quick-return
+                if (!child_parser_node.is_optional) {
+                  return tokens_i;
+                }
+
+                // the child was optional, the match failing is not a big problem.
+                // 'next child.
+                continue;
+              }
+
+              // move position for the current container loop
+              final_tokens_i = new_tokens_i;
             }
 
-            // the child was optional, the match failing is not a big problem.
-            // 'next child.
-            continue;
+            // made it through all the children' matches.
+            // save the progress and repeat is the ParserNode is repeatable.
+            // in case of fail the value returned will be the value set to tokens_i here
+            tokens_i = final_tokens_i;
           }
+          else {
+            if (or_index >= 0 && or_index < parser_node->or_list.size()) {
+              ParserNode * used_parser_node = &parser_node->or_list[or_index];
 
-          // move position for the current container loop
-          final_tokens_i = new_tokens_i;
-        }
+              int new_tokens_i = match_parser_node(tokens, tokens_i, used_parser_node);
 
-        // made it through all the children' matches.
-        // save the progress and repeat is the ParserNode is repeatable.
-        // in case of fail the value returned will be the value set to tokens_i here
-        tokens_i = final_tokens_i;
-      } while (parser_node->is_repeatable);
+              if (new_tokens_i > tokens_i) {
+                tokens_i = new_tokens_i;
+                or_index = -1;
+              }
+              else {
+                ++or_index;
+              }
+            }
+            else {
+              // it is almost the same logic as above when `or_list->empty()`
+              // except when one of the children does not match we do not return
+              // but move the or_index forward by one.
+              bool success = true;
+              int final_tokens_i = tokens_i;
+
+              for (auto & child_parser_node : parser_node->group_list) {
+                int new_tokens_i = match_parser_node(tokens, final_tokens_i, &child_parser_node);
+
+                // did not match
+                if (new_tokens_i == final_tokens_i) {
+                  // and the child was not optional,
+                  // tell there was a failure and move or_index forward
+                  if (!child_parser_node.is_optional) {
+                    ++or_index;
+                    success = false;
+                    break;
+                  }
+
+                  // the child was optional, the match failing is not a big problem.
+                  // 'next child.
+                  continue;
+                }
+
+                // move position for the current container loop
+                final_tokens_i = new_tokens_i;
+              }
+
+              if (success) {
+                tokens_i = final_tokens_i;
+                or_index = -1;
+              }
+            }
+          }
+        } while (parser_node->is_repeatable || !parser_node->or_list.empty() && or_index < parser_node->or_list.size());
+      }
       break;
   }
 
@@ -262,33 +359,61 @@ int match_parser_node(std::vector<Token> & tokens, int tokens_i, ParserNode * pa
 void parser(std::vector<Token> & tokens) {
   std::unordered_map<GrammarType, ParserNode> grammar_store;
 
-  grammar_store[G_program] = ParserNode(reference, &grammar_store)
-    .or(ParserNode(reference, &grammar_store).ref(G_moduleImport));
+  #define CONTAINER(children) ParserNode(container, &grammar_store).group(std::vector<ParserNode> children)
+  #define REFERENCE(ref_to) ParserNode(reference, &grammar_store).ref(ref_to)
 
-  grammar_store[G_moduleImport] = ParserNode(container, &grammar_store)
-    .group(std::vector<ParserNode> {
-      token(Module),
-      token(Identifier)
-    });
+  grammar_store[G_moduleImport] = CONTAINER(({
+    token(Module),
+    token(Identifier),
+    token(Semicolon)
+  }));
 
-  grammar_store[G_addition] = ParserNode(container, &grammar_store)
-    .group(std::vector<ParserNode> {
-      token(Number)
+  grammar_store[G_addition] = CONTAINER(({
+    token(Number)
         .or(token(NumberFloat)),
-      token(Plus),
-      token(Number)
-        .or(token(NumberFloat)),
-    });
+    token(Plus),
+    REFERENCE(G_addition)
+      .or(token(Number))
+      .or(token(NumberFloat)),
+  }));
 
-  auto * current_parser_node = &grammar_store[G_addition];
+  grammar_store[G_useStatement] = CONTAINER(({
+    token(Use),
+    CONTAINER(({
+      token(Identifier),
+      token(DoubleColon)
+    })).repeat(),
+    CONTAINER(({
+      token(LeftBrace),
+      token(Identifier),
+      CONTAINER(({
+        token(Comma),
+        token(Identifier)
+      })).repeat().optional(),
+      token(RightBrace)
+    }))
+    .or(token(Identifier)),
+    token(Semicolon)
+  }));
+
+  grammar_store[G_program] = REFERENCE(G_moduleImport)
+    .or(REFERENCE(G_addition))
+    .or(REFERENCE(G_useStatement))
+    .repeat();
+
+  auto * current_parser_node = &grammar_store[G_program];
   int tokens_i = 0;
 
   while (true) {
     int new_tokens_i = match_parser_node(tokens, tokens_i, current_parser_node);
 
-    LOG(tokens_i);
-    LOG(new_tokens_i);
+    LOG("before: " << tokens_i << ", after: " << new_tokens_i << '\n');
 
-    break;
+    if (new_tokens_i == tokens_i) {
+      break;
+    }
+    else {
+      tokens_i = new_tokens_i;
+    }
   }
 }

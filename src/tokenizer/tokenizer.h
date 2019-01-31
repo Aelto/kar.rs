@@ -44,6 +44,7 @@ std::vector<Token> tokenizer(std::ifstream & file) {
 
           pos += 1;
           global_pos += 1;
+          break;
 
         case '-':
           if (line.find("->", pos) == pos) {
@@ -280,6 +281,12 @@ std::vector<Token> tokenizer(std::ifstream & file) {
 
             pos += 6;
             global_pos += 6;
+          }
+          else if (c == 'u' && line.find("use ", pos) == pos) {
+            tokens.emplace_back(TokenType::Use, global_pos);
+
+            pos += 4;
+            global_pos += 4;
           }
           //#endregion
 

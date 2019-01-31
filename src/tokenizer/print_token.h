@@ -112,6 +112,10 @@ void print_token(Token & token) {
     case TokenType::Module:
       LOG("module");
       break;
+
+    case TokenType::Use:
+      LOG("use");
+      break;
   
     default:
       break;
