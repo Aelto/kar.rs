@@ -7,69 +7,57 @@ The compiler for the **kar** programming language
 ## files
  - **extension:** the compiler looks for `*.kar` files
  - **entry point:** the default entry point of a program is the `main.kar` file
- 
-## main program
-There is no `main` function to your program, the whole file is treated as the "main function".
-
-A simple hello world looks like:
-```js
-import log;
-
-log('Hello World!');
-```
 
 ## variables
 declare immutable variables with `const`
-```js
-const a: int = 15;
-
+```rust
+let a: int = 6;
 a = 10; // Error
 ```
 
 declare mutable variables with `let`
-```js
-let b: int = 15;
-
-b = 10; // it works
+```rust
+mut a: int = 15;
+a = 10; // it works
 ```
 
 ## functions
 a function without parameters nor return type
-```js
-import log;
+```rust
+use std::{println};
 
 fn sayHello() {
- log('Hello!');
+ println("hello");
 }
 ```
 
 a function with parameters
-```js
-import log;
+```rust
+use std::{println};
 
 fn printSum(a: int, b: int) {
-  log(a + b);
+  println(a + b);
 }
 ```
 
 a function with a return type
-```js
+```rust
 fn add(a: int, b: int) -> int {
   return a + b;
 }
 ```
 
 ## struct
-```js
+```rust
 struct myVector2 {
   x: int,
   y: int,
-}
+};
 
-const customVector2: myVector2 {
+let customVector2 = myVector2 {
   x: 15,
   y: 15,
-}
+};
 ```
 
 ## Methods
@@ -77,10 +65,10 @@ const customVector2: myVector2 {
 struct myVector2 {
   x: int,
   y: int,
-}
+};
 
 impl myVector2 {
-  static fn from(x: int, y: int) -> myVector2 {
+  static fn new(x: int, y: int) -> myVector2 {
     return myVector2 { x: x, y: y };
   }
   
@@ -88,42 +76,42 @@ impl myVector2 {
     this.x += x;
     this.y += y;
   }
-}
+};
 
-const customVector2: myVector2 = myVector2::from(0, 0)
-customVector2.translate(15, 15)
+let customVector2 = myVector2::new(0, 0);
+customVector2.translate(15, 15);
 ```
 
 ## Loops
 
 ### for loop
-```js
-import log;
+```rust
+use std::{println};
 
-for (let i: int = 0; i < 10; i += 1) {
-  log(i);
+for (mut i = 0; i < 10; ++i) {
+  println(i);
 }
-
-for (let i: int in 15..0; i -= 1)
-  log(i);
-
 ```
 
 ### while loop
-```js
-import log
+```rust
+use std::{println};
 
-let i: int = 15
+mut i = 15;
 while (i >= 0) {
-  log(i--);
+  println(i--);
 }
 
+mut j = 15;
+do {
+ println(j--);
+} while (j > 0);
 ```
 
 ## If
 ### standard
-```js
-const choice: bool = false
+```rust
+let choice = false;
 if (choice) {
 
 } else if (!choice) {
@@ -131,63 +119,59 @@ if (choice) {
 } else {
 
 }
-
 ```
 
 ### ternary operator
-```js
-const choice: bool = false;
-const value: int = choice
+```rust
+let choice = false;
+const value = choice
   ? 1
   : 0;
   
 // can be written
-const valueTwo: int = choice ? 1 : 0;
+let valueTwo = choice ? 1 : 0;
 ```
 
 ## Strings
-```js
-const word: string = "Hello";
-const phrase: string = word + " World!";
+```rust
+use std::{println};
 
-let changingPhrase: string = "What am i?";
-changingPhrase += "You're not the same anymore";
+let word: string = "Hello";
+let phrase = word + " World!";
 
-log(word); // > "Hello"
-log(phrase); // > "Hello World!"
-log(changingPhrase); // > "What am i? You're not the same anymore"
+let changingPhrase = "Hello";
+changingPhrase += " World!";
+
+println(word); // > "Hello"
+println(phrase); // > "Hello World!"
+println(changingPhrase); // > "Hello World!"
 ```
 
 ## Lists
 ### fixed length
-```js
-const words: [2]string = ["Hello", "World!"];
+```rust
+let words: string[2] = ["Hello", "World!"];
 ```
 
 ### dynamic size
-```js
-const words: []string = [];
-words.push("Hello")
-  .push("World!")
-  .push("Foo");
+```rust
+mut words: vec<string> = [];
+
+words.push("Hello");
+words.push("World!");
+words.push("Foo");
 ```
 
-## Dictionnary (string to any type)
+## Map (key/value pair)
 ```rust
-const letterToNumber: <int>{
- "a": 1,
- "b": 2,
- "c": 3,
- "d": 4,
+let letterToNumber: map<char, int> {
+ 'a': 1,
+ 'b': 2,
+ 'c': 3,
+ 'd': 4,
 };
 
-letterToNumber.e = 5;
-
-const letter: string = "f";
-letterToNumber[f] = 6;
-
-log(letterToNumber.a); // > 1
-log(letterToNumber.z); // > null
+letterToNumber.['e'] = 5;
 ```
 
 ## modules
