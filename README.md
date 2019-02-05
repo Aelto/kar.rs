@@ -191,25 +191,4 @@ log(letterToNumber.z); // > null
 ```
 
 ## modules
-declare what you want to be exported with the `export` keyword
-
-### single function module
-```js
-export fn add(a: int, b: int) -> int {
-  return a + b;
-}
-```
-
-### multiple functions module
-```js
-
-export myModule {
-  fn add(a: int, b: int) -> int {
-    return a + b;
-  }
-  
-  fn mul(a: int, b: int) -> int {
-    return a * b;
-  }
-}
-```
+a draft is in progress on this subject at [draft/modules.md](/drafts/modules.md)
