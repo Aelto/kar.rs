@@ -26,7 +26,9 @@ int main(int argc, char * argv[]) {
   auto tokens = tokenizer(file);
   file.close();
 
+  unsigned int i = 0;
   for (auto & token : tokens) {
+    std::cout << i++ << " - ";
     print_token(token);
     std::cout << '\n';
 

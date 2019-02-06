@@ -1,14 +1,14 @@
-module iostream;
+use std::{println};
 
-use std::{cout, endl};
+fn main(argc: int, argv: string[]) -> int {}
 
 fn main() -> int {
-  cout << "hello, world!\n";
+  println("Hello, world!");
 
   let x = 10;
   let y = 20.5;
 
-  cout << x + y << endl;
+  println(x + y);
 
   return 0;
 }

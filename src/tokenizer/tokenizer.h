@@ -288,6 +288,12 @@ std::vector<Token> tokenizer(std::ifstream & file) {
             pos += 4;
             global_pos += 4;
           }
+          else if (c == 'r' && line.find("return ", pos) == pos) {
+            tokens.emplace_back(TokenType::Return, global_pos);
+
+            pos += 7;
+            global_pos += 7;
+          }
           //#endregion
 
           else if (isalpha(c)) {

@@ -3,7 +3,6 @@
 #include "../debug.h"
 
 #include "../tokenizer/token.h"
-#include "node.h"
 #include <vector>
 #include <unordered_map>
 
@@ -19,7 +18,13 @@ enum GrammarType {
   G_program,
   G_moduleImport,
   G_addition,
-  G_useStatement
+  G_useStatement,
+  G_function,
+  G_commaSeparatedIdentifiers,
+  G_commaSeparatedTypedIdentifiers,
+  G_functionCall,
+  G_immutableVariable,
+  G_returnStatement
 };
 
 /**
@@ -155,6 +160,8 @@ bool token_match(Token * token, ParserNode * parser_node) {
 }
 
 int match_parser_node(std::vector<Token> & tokens, int tokens_i, ParserNode * parser_node) {
+  LOG("-" << tokens_i);
+
   switch (parser_node->type)
   {
     case match:
@@ -370,11 +377,13 @@ void parser(std::vector<Token> & tokens) {
 
   grammar_store[G_addition] = CONTAINER(({
     token(Number)
-        .or(token(NumberFloat)),
+        .or(token(NumberFloat))
+        .or(token(Identifier)),
     token(Plus),
     REFERENCE(G_addition)
       .or(token(Number))
-      .or(token(NumberFloat)),
+      .or(token(NumberFloat))
+      .or(token(Identifier)),
   }));
 
   grammar_store[G_useStatement] = CONTAINER(({
@@ -396,9 +405,82 @@ void parser(std::vector<Token> & tokens) {
     token(Semicolon)
   }));
 
+  grammar_store[G_commaSeparatedIdentifiers] = CONTAINER(({
+    REFERENCE(G_addition)
+      .or(token(Number))
+      .or(token(NumberFloat))
+      .or(token(String))
+      .or(token(Identifier)),
+    CONTAINER(({
+      token(Comma),
+      REFERENCE(G_commaSeparatedIdentifiers)
+    })).optional()
+  }));
+
+  grammar_store[G_commaSeparatedTypedIdentifiers] = CONTAINER(({
+    token(Identifier)
+      .or(token(Number))
+      .or(token(NumberFloat)),
+    token(Colon),
+    token(Identifier),
+    CONTAINER(({
+      token(Comma),
+      REFERENCE(G_commaSeparatedTypedIdentifiers)
+    })).optional()
+  }));
+
+  grammar_store[G_function] = CONTAINER(({
+    token(Function),
+    token(Identifier),
+    token(LeftParen),
+    REFERENCE(G_commaSeparatedTypedIdentifiers)
+      .optional(),
+    token(RightParen),
+    CONTAINER(({
+      token(RightArrow),
+      token(Identifier)
+    })).optional(),
+    token(LeftBrace),
+    REFERENCE(G_program)
+      .optional(),
+    token(RightBrace)
+  }));
+
+  grammar_store[G_functionCall] = CONTAINER(({
+    token(Identifier),
+    token(LeftParen),
+    REFERENCE(G_commaSeparatedIdentifiers)
+      .optional(),
+    token(RightParen)
+  }));
+
+  grammar_store[G_immutableVariable] = CONTAINER(({
+    token(Let),
+    token(Identifier),
+    token(Equal),
+    token(Number)
+      .or(token(NumberFloat))
+      .or(token(String))
+      .or(REFERENCE(G_functionCall))
+  }));
+
+  grammar_store[G_returnStatement] = CONTAINER(({
+    token(Return),
+    token(Number)
+      .or(token(NumberFloat))
+      .or(token(String))
+      .or(REFERENCE(G_functionCall)),
+  }));
+  
+
   grammar_store[G_program] = REFERENCE(G_moduleImport)
     .or(REFERENCE(G_addition))
     .or(REFERENCE(G_useStatement))
+    .or(REFERENCE(G_function))
+    .or(REFERENCE(G_functionCall))
+    .or(REFERENCE(G_returnStatement))
+    .or(REFERENCE(G_immutableVariable))
+    .or(token(Semicolon))
     .repeat();
 
   auto * current_parser_node = &grammar_store[G_program];
