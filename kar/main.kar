@@ -1,7 +1,5 @@
 use std::{println};
 
-fn main(argc: int, argv: string[]) -> int {}
-
 fn main() -> int {
   println("Hello, world!");
 
