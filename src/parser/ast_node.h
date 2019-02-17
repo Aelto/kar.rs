@@ -5,6 +5,7 @@
 struct AstNode {
   /**
    * specifies if the AstNode is of Type unique or container
+   * TODO: use a union instead
    **/
   enum AstNodeType {
     /**
@@ -22,16 +23,19 @@ struct AstNode {
 
   /**
    * note: used only when type::unique
+   * TODO: use a union instead
    **/
   Token * token = nullptr;
 
   /**
    * note: used only when type::unique
+   * TODO: use a union instead
    **/
   int tokens_i = 0;
 
   /**
    * note: used only when type::container
+   * TODO: use a union instead
    **/
   std::vector<AstNode> children_nodes;
 

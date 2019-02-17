@@ -37,7 +37,7 @@ int main(int argc, char * argv[]) {
     }
   }
 
-  parser(tokens);
+  parser::parser(tokens);
 
   return 0;
 }
