@@ -2,8 +2,8 @@
 
 #include "token.h"
 
-void print_token(Token & token) {
-  switch (token.type)
+void print_token(TokenType type) {
+  switch (type)
   {
     case TokenType::LeftParen:
       LOG("left-paren");
@@ -50,11 +50,11 @@ void print_token(Token & token) {
       break;
 
     case TokenType::Number:
-      LOG("number(" << *token.value << ")");
+      LOG("number()");
       break;
 
     case TokenType::NumberFloat:
-      LOG("number-float(" << *token.value << ")");
+      LOG("number-float()");
       break;
 
     case TokenType::Function:
@@ -70,11 +70,11 @@ void print_token(Token & token) {
       break;
 
     case TokenType::Identifier:
-      LOG("ident(" << *token.value << ")");
+      LOG("ident()");
       break;
 
     case TokenType::String:
-      LOG("string(" << *token.value << ")");
+      LOG("string()");
       break;
 
     case TokenType::DoubleLeftCaret:
@@ -115,6 +115,10 @@ void print_token(Token & token) {
 
     case TokenType::Use:
       LOG("use");
+      break;
+
+    case TokenType::Return:
+      LOG("return");
       break;
   
     default:

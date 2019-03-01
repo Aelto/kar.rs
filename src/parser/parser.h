@@ -8,6 +8,8 @@
 #include "node.h"
 #include "parsing_result.h"
 
+#include "../tokenizer/print_token.h"
+
 namespace parser {
   using result::ParsingResult;
 
@@ -16,13 +18,20 @@ namespace parser {
   }
 
   std::vector<ParsingResult> match_parser_node(std::vector<Token> & tokens, int tokens_i, ParserNode * parser_node) {
-    LOG("-" << tokens_i);
+    LOG("\n-" << tokens_i);
 
     switch (parser_node->type)
     {
       case match:
         {
+          LOG("expected: ");
+          print_token(parser_node->match_token);
+
           auto * token = &tokens[tokens_i];
+
+          LOG("found: ");
+          print_token(token->type);
+
           int or_index = -1;
           std::vector<ParsingResult> output;
 
@@ -40,7 +49,7 @@ namespace parser {
                 };
               }
 
-              output.push_back(result::new_token(tokens_i, token));
+              output.push_back(result::new_token(tokens_i + 1, token));
               
               // move forward by 1 token
               ++tokens_i;
@@ -79,6 +88,8 @@ namespace parser {
               }
             }
           } while (parser_node->is_repeatable || !parser_node->or_list.empty() && or_index < parser_node->or_list.size());
+
+          return output;
         }
         break;
 
@@ -111,6 +122,8 @@ namespace parser {
                 used_parser_node = &parser_node->or_list[or_index];
 
                 auto result = match_parser_node(tokens, tokens_i, used_parser_node);
+
+                LOG("result-size " << result.size());
 
                 // if (result.empty() || result.back().pos > tokens_i) {
                 //   tokens_i = result.tokens_i;
@@ -151,6 +164,10 @@ namespace parser {
               break;
             }
           } while (parser_node->is_repeatable || !parser_node->or_list.empty() && or_index < parser_node->or_list.size());
+
+          LOG("\n\toutput-size: " << output.size() << "\n");
+
+          return output;
         }
         break;
 
@@ -185,12 +202,14 @@ namespace parser {
                 // move position for the current container loop
                 final_tokens_i = add_results(current_output, result);
               }
-              
+
               // made it through all the children' matches.
               // save the progress and repeat if the ParserNode is repeatable.
               // in case of a fail during the parsing of one of the children
               // only the ones pushed here will be returned
               output.push_back(current_output);
+              tokens_i = final_tokens_i;
+
             }
             else {
               if (or_index >= 0 && or_index < parser_node->or_list.size()) {
@@ -246,6 +265,8 @@ namespace parser {
               }
             }
           } while (parser_node->is_repeatable || !parser_node->or_list.empty() && or_index < parser_node->or_list.size());
+
+          return output;
         }
         break;
     }

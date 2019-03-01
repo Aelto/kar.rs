@@ -29,7 +29,7 @@ int main(int argc, char * argv[]) {
   unsigned int i = 0;
   for (auto & token : tokens) {
     std::cout << i++ << " - ";
-    print_token(token);
+    print_token(token.type);
     std::cout << '\n';
 
     if (token.value != nullptr) {
