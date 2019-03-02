@@ -9,18 +9,18 @@ enum GrammarType {
   /**
    * default type pointing to no ParserNode
    **/
-  G_None,
+  G_None = 0,
 
-  G_program,
-  G_moduleImport,
-  G_addition,
-  G_useStatement,
-  G_function,
-  G_commaSeparatedIdentifiers,
-  G_commaSeparatedTypedIdentifiers,
-  G_functionCall,
-  G_immutableVariable,
-  G_returnStatement
+  G_program = 1,
+  G_moduleImport = 2,
+  G_addition = 3,
+  G_useStatement = 4,
+  G_function = 5,
+  G_commaSeparatedIdentifiers = 6,
+  G_commaSeparatedTypedIdentifiers = 7,
+  G_functionCall = 8,
+  G_immutableVariable = 9,
+  G_returnStatement = 10
 };
 
 /**

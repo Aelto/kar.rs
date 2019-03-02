@@ -7,274 +7,297 @@
 #include "../tokenizer/token.h"
 #include "node.h"
 #include "parsing_result.h"
-
+#include "../result.h"
 #include "../tokenizer/print_token.h"
+#include <string>
+
+using result::Result, result::Ok, result::Err;
 
 namespace parser {
-  using result::ParsingResult;
+  using parser::result::ParsingResult;
+  using std::vector;
+  using std::string;
 
   bool token_match(Token * token, ParserNode * parser_node) {
     return parser_node->match_token == token->type;
   }
 
-  std::vector<ParsingResult> match_parser_node(std::vector<Token> & tokens, int tokens_i, ParserNode * parser_node) {
-    LOG("\n-" << tokens_i);
+  Result<vector<ParsingResult>, size_t> match_parser_node(vector<Token> & tokens, size_t tokens_i, ParserNode * parser_node) {
+    LOG("\n" << tokens_i << "|" << string(tokens_i, ' '));
 
-    switch (parser_node->type)
-    {
-      case match:
-        {
-          LOG("expected: ");
-          print_token(parser_node->match_token);
+    if (parser_node->type == match) {
+      LOG("expected: ");
+      print_token(parser_node->match_token);
 
-          auto * token = &tokens[tokens_i];
+      auto * token = &tokens[tokens_i];
 
-          LOG("found: ");
-          print_token(token->type);
+      LOG("found: ");
+      print_token(token->type);
 
-          int or_index = -1;
-          std::vector<ParsingResult> output;
+      int or_index = -1;
+      std::vector<ParsingResult> output;
 
-          do {
-            auto current_output = result::new_container(tokens_i);
+      do {
+        auto current_output = result::new_container(tokens_i);
 
-            if (parser_node->or_list.empty()) {
-              bool do_match = token_match(token, parser_node);
+        if (parser_node->or_list.empty()) {
+          LOG(" no_or_list ");
+          bool do_match = token_match(token, parser_node);
 
-              // token did not match
-              if (!do_match) {
-                // return unchanged position
-                return std::vector<ParsingResult> {
-                  result::failure(tokens_i)
-                };
-              }
+          // token did not match
+          if (!do_match) {
+            LOG(" no_match ");
+            // return unchanged position
+            return Err<vector<ParsingResult>>(tokens_i);
+          }
 
+          output.push_back(result::new_token(tokens_i + 1, token));
+          
+          // move forward by 1 token
+          ++tokens_i;
+        }
+        else {
+          LOG(" or_list ");
+          ParserNode * used_parser_node = parser_node;
+
+          if (or_index >= 0 && or_index < parser_node->or_list.size()) {
+            used_parser_node = &parser_node->or_list[or_index];
+
+            auto result = match_parser_node(tokens, tokens_i, used_parser_node);
+
+            if (result.is_error) {
+              ++or_index;
+            }
+            else {
+              auto parsing_results = result.unwrap_or({});
+              or_index = -1;
+              tokens_i = result::add_results(current_output, parsing_results);
+
+              output.push_back(current_output);
+            }
+          }
+          else {
+            LOG(" first_match ");
+            bool do_match = token_match(token, parser_node);
+
+            if (!do_match) {
+              ++or_index;
+            }
+            else {
+              LOG(" match ");
               output.push_back(result::new_token(tokens_i + 1, token));
-              
+
               // move forward by 1 token
               ++tokens_i;
+              
+              if (!parser_node->is_repeatable) {
+                LOG(" no_repeat_break ");
+                break;
+              }
+            }
+          }
+        }
+      } while (parser_node->is_repeatable || !parser_node->or_list.empty() && or_index < parser_node->or_list.size());
+
+      LOG("\n" << tokens_i << "|" << string(tokens_i, ' ') << output.size());
+
+      return Ok<size_t>(output);
+    }
+
+    else if (parser_node->type == reference) {
+      LOG("reference: " << parser_node->ref_to << " ");
+      int or_index = -1;
+      std::vector<ParsingResult> output;
+
+      do {
+        auto current_output = result::new_container(tokens_i);
+
+        if (parser_node->or_list.empty()) {
+          auto * referenced_parser_node = &parser_node->store->at(parser_node->ref_to);
+
+          auto result = match_parser_node(tokens, tokens_i, referenced_parser_node);
+
+          // same position as before, it means it did not match.
+          if (result.is_error) {
+            return Err<vector<ParsingResult>>(tokens_i);
+          }
+
+          auto parsing_result = result.unwrap_or({});
+          tokens_i = result::add_results(current_output, parsing_result);
+          output.push_back(current_output);
+        }
+        else {
+          if (or_index >= 0 && or_index < parser_node->or_list.size()) {
+            ParserNode * used_parser_node = parser_node;
+            used_parser_node = &parser_node->or_list[or_index];
+
+            auto result = match_parser_node(tokens, tokens_i, used_parser_node);
+
+            // if (result.empty() || result.back().pos > tokens_i) {
+            //   tokens_i = result.tokens_i;
+            //   or_index = -1;
+            // }
+            // else {
+            //   ++or_index;
+            // }
+
+            if (result.is_error) {
+              ++or_index;
             }
             else {
-              ParserNode * used_parser_node = parser_node;
+              auto parsing_result = result.unwrap_or({});
 
-              if (or_index >= 0 && or_index < parser_node->or_list.size()) {
-                used_parser_node = &parser_node->or_list[or_index];
+              or_index = -1;
+              tokens_i = result::add_results(current_output, parsing_result);
 
-                auto result = match_parser_node(tokens, tokens_i, used_parser_node);
-
-                if (result.empty() || result.back().pos <= tokens_i) {
-                  ++or_index;
-                }
-                else {
-                  or_index = -1;
-                  tokens_i = result::add_results(current_output, result);
-
-                  output.push_back(current_output);
-                }
-              }
-              else {
-                bool do_match = token_match(token, parser_node);
-
-                if (!do_match) {
-                  // return unchanged position
-                    ++or_index;
-                }
-                else {
-                  output.push_back(result::new_token(tokens_i, token));
-
-                  // move forward by 1 token
-                  ++tokens_i;
-                }
-              }
-            }
-          } while (parser_node->is_repeatable || !parser_node->or_list.empty() && or_index < parser_node->or_list.size());
-
-          return output;
-        }
-        break;
-
-      case reference:
-        {
-          int or_index = -1;
-          std::vector<ParsingResult> output;
-
-          do {
-            auto current_output = result::new_container(tokens_i);
-
-            if (parser_node->or_list.empty()) {
-              auto * referenced_parser_node = &parser_node->store->at(parser_node->ref_to);
-
-              auto result = match_parser_node(tokens, tokens_i, referenced_parser_node);
-
-              // same position as before, it means it did not match.
-              if (result.empty() || result.back().pos == tokens_i) {
-                return std::vector<ParsingResult> {
-                  result::failure(tokens_i)
-                };
-              }
-
-              tokens_i = result::add_results(current_output, result);
               output.push_back(current_output);
+            }
+          }
+          else {
+            auto * referenced_parser_node = &parser_node->store->at(parser_node->ref_to);
+
+            auto result = match_parser_node(tokens, tokens_i, referenced_parser_node);
+
+            if (result.is_error) {
+              ++or_index;
             }
             else {
-              if (or_index >= 0 && or_index < parser_node->or_list.size()) {
-                ParserNode * used_parser_node = parser_node;
-                used_parser_node = &parser_node->or_list[or_index];
+              auto parsing_result = result.unwrap_or({});
+              or_index = -1;
+              tokens_i = result::add_results(current_output, parsing_result);
 
-                auto result = match_parser_node(tokens, tokens_i, used_parser_node);
-
-                LOG("result-size " << result.size());
-
-                // if (result.empty() || result.back().pos > tokens_i) {
-                //   tokens_i = result.tokens_i;
-                //   or_index = -1;
-                // }
-                // else {
-                //   ++or_index;
-                // }
-
-                if (result.empty() || result.back().pos <= tokens_i) {
-                  ++or_index;
-                }
-                else {
-                  or_index = -1;
-                  tokens_i = result::add_results(current_output, result);
-
-                  output.push_back(current_output);
-                }
-              }
-              else {
-                auto * referenced_parser_node = &parser_node->store->at(parser_node->ref_to);
-
-                auto result = match_parser_node(tokens, tokens_i, referenced_parser_node);
-
-                if (result.empty() || result.back().pos <= tokens_i) {
-                  ++or_index;
-                }
-                else {
-                  or_index = -1;
-                  tokens_i = result::add_results(current_output, result);
-
-                  output.push_back(current_output);
-                }
-              }
-            }
-
-            if (or_index >= 0 && or_index > parser_node->or_list.size()) {
-              break;
-            }
-          } while (parser_node->is_repeatable || !parser_node->or_list.empty() && or_index < parser_node->or_list.size());
-
-          LOG("\n\toutput-size: " << output.size() << "\n");
-
-          return output;
-        }
-        break;
-
-      case container:
-        {
-          int or_index = -1;
-
-          std::vector<ParsingResult> output;
-
-          do {
-            auto current_output = result::new_container(tokens_i);
-
-            if (parser_node->or_list.empty()) {
-              // the variable will be the new position returned if every child matched
-              int final_tokens_i = tokens_i;
-
-              for (auto & child_parser_node : parser_node->group_list) {
-                auto result = match_parser_node(tokens, final_tokens_i, &child_parser_node);
-
-                // did not match
-                if (result.empty() || result.back().pos == final_tokens_i) {
-                  // and the child was not optional, quick-return
-                  if (!child_parser_node.is_optional) {
-                    return output;
-                  }
-
-                  // the child was optional, the match failing is not a big problem.
-                  // next child.
-                  continue;
-                }
-
-                // move position for the current container loop
-                final_tokens_i = add_results(current_output, result);
-              }
-
-              // made it through all the children' matches.
-              // save the progress and repeat if the ParserNode is repeatable.
-              // in case of a fail during the parsing of one of the children
-              // only the ones pushed here will be returned
               output.push_back(current_output);
+            }
+          }
+        }
+
+        if (or_index >= 0 && or_index > parser_node->or_list.size()) {
+          break;
+        }
+      } while (parser_node->is_repeatable || !parser_node->or_list.empty() && or_index < parser_node->or_list.size());
+
+      LOG("\n" << tokens_i << "|" << string(tokens_i, ' ') << "output-size: " << output.size() << " reference");
+
+      return Ok<size_t>(output);
+    }
+
+    else if (parser_node->type == container) {
+      LOG("container");
+      int or_index = -1;
+
+      std::vector<ParsingResult> output;
+
+      do {
+        auto current_output = result::new_container(tokens_i);
+
+        if (parser_node->or_list.empty()) {
+          // the variable will be the new position returned if every child matched
+          int final_tokens_i = tokens_i;
+
+          for (auto & child_parser_node : parser_node->group_list) {
+            auto result = match_parser_node(tokens, final_tokens_i, &child_parser_node);
+
+            // did not match
+            if (result.is_error) {
+              // and the child was not optional, quick-return
+              if (!child_parser_node.is_optional) {
+                if (output.empty()) {
+                  return Err<vector<ParsingResult>>(tokens_i);
+                }
+                else {
+                  return Ok<size_t>(output);
+                }
+              }
+
+              // the child was optional, the match failing is not a big problem.
+              // next child.
+              continue;
+            }
+
+
+            auto parsing_result = result.unwrap_or({});
+
+            LOG(" " << final_tokens_i);
+            // move position for the current container loop
+            final_tokens_i = add_results(current_output, parsing_result);
+            LOG(" " << final_tokens_i);
+          }
+
+          // made it through all the children' matches.
+          // save the progress and repeat if the ParserNode is repeatable.
+          // in case of a fail during the parsing of one of the children
+          // only the ones pushed here will be returned
+          output.push_back(current_output);
+          tokens_i = final_tokens_i;
+
+        }
+        else {
+          if (or_index >= 0 && or_index < parser_node->or_list.size()) {
+            ParserNode * used_parser_node = &parser_node->or_list[or_index];
+
+            auto result = match_parser_node(tokens, tokens_i, used_parser_node);
+
+            if (result.is_error) {
+              LOG("####" << result.err);
+              ++or_index;
+            }
+            else {
+              auto parsing_result = result.unwrap_or({});
+              or_index = -1;
+              tokens_i = result::add_results(current_output, parsing_result);
+
+              output.push_back(current_output);
+            }
+          }
+          else {
+            // it is almost the same logic as above when `or_list->empty()`
+            // except when one of the children does not match we do not return
+            // but move the or_index forward by one.
+            bool success = true;
+            int final_tokens_i = tokens_i;
+
+            for (auto & child_parser_node : parser_node->group_list) {
+              auto result = match_parser_node(tokens, final_tokens_i, &child_parser_node);
+
+              // did not match
+              if (result.is_error) {
+                // and the child was not optional,
+                // tell there was a failure and move or_index forward
+                if (!child_parser_node.is_optional) {
+                  LOG("####" << result.err);
+                  ++or_index;
+                  success = false;
+                  break;
+                }
+
+                // the child was optional, the match failing is not a big problem.
+                // 'next child.
+                continue;
+              }
+
+              auto parsing_result = result.unwrap_or({});
+
+              // move position for the current container loop
+              final_tokens_i = result::add_results(current_output, parsing_result);
+            }
+
+            if (success) {
               tokens_i = final_tokens_i;
+              or_index = -1;
 
+              output.push_back(current_output);
             }
-            else {
-              if (or_index >= 0 && or_index < parser_node->or_list.size()) {
-                ParserNode * used_parser_node = &parser_node->or_list[or_index];
-
-                auto result = match_parser_node(tokens, tokens_i, used_parser_node);
-
-                if (result.empty() || result.back().pos <= tokens_i) {
-                  ++or_index;
-                }
-                else {
-                  or_index = -1;
-                  tokens_i = result::add_results(current_output, result);
-
-                  output.push_back(current_output);
-                }
-              }
-              else {
-                // it is almost the same logic as above when `or_list->empty()`
-                // except when one of the children does not match we do not return
-                // but move the or_index forward by one.
-                bool success = true;
-                int final_tokens_i = tokens_i;
-
-                for (auto & child_parser_node : parser_node->group_list) {
-                  auto result = match_parser_node(tokens, final_tokens_i, &child_parser_node);
-
-                  // did not match
-                  if (result.empty() || result.back().pos == final_tokens_i) {
-                    // and the child was not optional,
-                    // tell there was a failure and move or_index forward
-                    if (!child_parser_node.is_optional) {
-                      ++or_index;
-                      success = false;
-                      break;
-                    }
-
-                    // the child was optional, the match failing is not a big problem.
-                    // 'next child.
-                    continue;
-                  }
-
-                  // move position for the current container loop
-                  final_tokens_i = result::add_results(current_output, result);
-                }
-
-                if (success) {
-                  tokens_i = final_tokens_i;
-                  or_index = -1;
-
-                  output.push_back(current_output);
-                }
-              }
-            }
-          } while (parser_node->is_repeatable || !parser_node->or_list.empty() && or_index < parser_node->or_list.size());
-
-          return output;
+          }
         }
-        break;
+      } while (parser_node->is_repeatable || !parser_node->or_list.empty() && or_index < parser_node->or_list.size());
+
+      LOG("\n" << tokens_i << "|" << string(tokens_i, ' ') << "output-size: " << output.size());
+
+      return Ok<size_t>(output);
     }
 
     // returning the same position as before means there was no match at all
-    return std::vector<ParsingResult> {
-      result::failure(tokens_i)
-    };
+    return Err<vector<ParsingResult>>(tokens_i);
   }
 
   void parser(std::vector<Token> & tokens) {
@@ -376,7 +399,8 @@ namespace parser {
       token(Number)
         .or(token(NumberFloat))
         .or(token(String))
-        .or(REFERENCE(G_functionCall))
+        .or(REFERENCE(G_functionCall)),
+      token(Semicolon)
     }));
 
     grammar_store[G_returnStatement] = CONTAINER(({
@@ -402,17 +426,33 @@ namespace parser {
     auto * current_parser_node = &grammar_store[G_program];
     int tokens_i = 0;
 
+    ParsingResult * program_parsing_result = new ParsingResult(0);
+
     while (true) {
-      std::vector<ParsingResult> results = match_parser_node(tokens, tokens_i, current_parser_node);
-
-      LOG("before: " << tokens_i << ", after: " << results.back().pos << '\n');
-
-      if (results.back().pos == tokens_i) {
+      if (tokens_i >= tokens.size()) {
+        LOG("\nparsing success");
         break;
       }
-      else {
-        tokens_i = results.back().pos;
+
+      Result<vector<ParsingResult>, size_t> results = match_parser_node(tokens, tokens_i, current_parser_node);
+
+      if (results.is_error) {
+        LOG("parsing stopped at" << results.err);
+        break;
       }
+
+      auto parsing_results = results.unwrap_or({});
+
+      if (parsing_results.empty()) {
+        LOG("parsing success but no result");
+        break;
+      }
+
+      program_parsing_result->children.insert(program_parsing_result->children.end(), parsing_results.begin(), parsing_results.end());
+      program_parsing_result->pos = parsing_results.back().pos;
+
+      LOG("\nbefore: " << tokens_i << ", after: " << parsing_results.back().pos << '\n');
+      tokens_i = parsing_results.back().pos;
     }
   }
 };
