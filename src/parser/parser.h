@@ -2,21 +2,22 @@
 
 #include "../debug.h"
 
-#include <vector>
 #include <unordered_map>
-#include "../tokenizer/token.h"
-#include "node.h"
-#include "parsing_result.h"
-#include "../result.h"
-#include "../tokenizer/print_token.h"
 #include <string>
+#include <vector>
+
+#include "../tokenizer/print_token.h"
+#include "../tokenizer/token.h"
+#include "../result.h"
+#include "parsing_result.h"
+#include "create_grammar.h"
+#include "parser_node.h"
 
 using result::Result, result::Ok, result::Err;
+using std::vector;
+using std::string;
 
 namespace parser {
-  using parser::result::ParsingResult;
-  using std::vector;
-  using std::string;
 
   bool token_match(Token * token, ParserNode * parser_node) {
     return parser_node->match_token == token->type;
@@ -38,22 +39,19 @@ namespace parser {
       std::vector<ParsingResult> output;
 
       do {
-        auto current_output = result::new_container(tokens_i);
+        auto current_output = new_container(tokens_i, G_None);
 
         if (parser_node->or_list.empty()) {
           LOG(" no_or_list ");
           bool do_match = token_match(token, parser_node);
 
-          // token did not match
           if (!do_match) {
             LOG(" no_match ");
-            // return unchanged position
             return Err<vector<ParsingResult>>(tokens_i);
           }
 
-          output.push_back(result::new_token(tokens_i + 1, token));
+          output.push_back(new_token(tokens_i + 1, token));
           
-          // move forward by 1 token
           ++tokens_i;
         }
         else {
@@ -71,7 +69,7 @@ namespace parser {
             else {
               auto parsing_results = result.unwrap_or({});
               or_index = -1;
-              tokens_i = result::add_results(current_output, parsing_results);
+              tokens_i = add_results(current_output, parsing_results);
 
               output.push_back(current_output);
             }
@@ -85,9 +83,8 @@ namespace parser {
             }
             else {
               LOG(" match ");
-              output.push_back(result::new_token(tokens_i + 1, token));
+              output.push_back(new_token(tokens_i + 1, token));
 
-              // move forward by 1 token
               ++tokens_i;
               
               if (!parser_node->is_repeatable) {
@@ -110,20 +107,19 @@ namespace parser {
       std::vector<ParsingResult> output;
 
       do {
-        auto current_output = result::new_container(tokens_i);
+        auto current_output = new_container(tokens_i, G_None);
 
         if (parser_node->or_list.empty()) {
           auto * referenced_parser_node = &parser_node->store->at(parser_node->ref_to);
 
           auto result = match_parser_node(tokens, tokens_i, referenced_parser_node);
 
-          // same position as before, it means it did not match.
           if (result.is_error) {
             return Err<vector<ParsingResult>>(tokens_i);
           }
 
           auto parsing_result = result.unwrap_or({});
-          tokens_i = result::add_results(current_output, parsing_result);
+          tokens_i = add_results(current_output, parsing_result);
           output.push_back(current_output);
         }
         else {
@@ -133,14 +129,6 @@ namespace parser {
 
             auto result = match_parser_node(tokens, tokens_i, used_parser_node);
 
-            // if (result.empty() || result.back().pos > tokens_i) {
-            //   tokens_i = result.tokens_i;
-            //   or_index = -1;
-            // }
-            // else {
-            //   ++or_index;
-            // }
-
             if (result.is_error) {
               ++or_index;
             }
@@ -148,7 +136,7 @@ namespace parser {
               auto parsing_result = result.unwrap_or({});
 
               or_index = -1;
-              tokens_i = result::add_results(current_output, parsing_result);
+              tokens_i = add_results(current_output, parsing_result);
 
               output.push_back(current_output);
             }
@@ -164,7 +152,7 @@ namespace parser {
             else {
               auto parsing_result = result.unwrap_or({});
               or_index = -1;
-              tokens_i = result::add_results(current_output, parsing_result);
+              tokens_i = add_results(current_output, parsing_result);
 
               output.push_back(current_output);
             }
@@ -188,7 +176,7 @@ namespace parser {
       std::vector<ParsingResult> output;
 
       do {
-        auto current_output = result::new_container(tokens_i);
+        auto current_output = new_container(tokens_i, parser_node->grammar_type);
 
         if (parser_node->or_list.empty()) {
           // the variable will be the new position returned if every child matched
@@ -244,7 +232,7 @@ namespace parser {
             else {
               auto parsing_result = result.unwrap_or({});
               or_index = -1;
-              tokens_i = result::add_results(current_output, parsing_result);
+              tokens_i = add_results(current_output, parsing_result);
 
               output.push_back(current_output);
             }
@@ -278,7 +266,7 @@ namespace parser {
               auto parsing_result = result.unwrap_or({});
 
               // move position for the current container loop
-              final_tokens_i = result::add_results(current_output, parsing_result);
+              final_tokens_i = add_results(current_output, parsing_result);
             }
 
             if (success) {
@@ -300,137 +288,26 @@ namespace parser {
     return Err<vector<ParsingResult>>(tokens_i);
   }
 
+  void recursive_parsing_result_lookup(ParsingResult * parsing_result, unsigned int depth = 0) {
+    LOG(string(depth, ' ') << parsing_result->grammar_type << "\n");
+
+    for (auto & child : parsing_result->children) {
+      recursive_parsing_result_lookup(&child, depth + 1);
+    }
+  }
+
   void parser(std::vector<Token> & tokens) {
     std::unordered_map<GrammarType, ParserNode> grammar_store;
-
-    #pragma region grammar_definition
-    #define CONTAINER(children) ParserNode(container, &grammar_store).group(std::vector<ParserNode> children)
-    #define REFERENCE(ref_to) ParserNode(reference, &grammar_store).ref(ref_to)
-
-    grammar_store[G_moduleImport] = CONTAINER(({
-      token(Module),
-      token(Identifier),
-      token(Semicolon)
-    }));
-
-    grammar_store[G_addition] = CONTAINER(({
-      token(Number)
-          .or(token(NumberFloat))
-          .or(token(Identifier)),
-      token(Plus),
-      REFERENCE(G_addition)
-        .or(token(Number))
-        .or(token(NumberFloat))
-        .or(token(Identifier)),
-    }));
-
-    grammar_store[G_useStatement] = CONTAINER(({
-      token(Use),
-      CONTAINER(({
-        token(Identifier),
-        token(DoubleColon)
-      })).repeat(),
-      CONTAINER(({
-        token(LeftBrace),
-        token(Identifier),
-        CONTAINER(({
-          token(Comma),
-          token(Identifier)
-        })).repeat().optional(),
-        token(RightBrace)
-      }))
-      .or(token(Identifier)),
-      token(Semicolon)
-    }));
-
-    grammar_store[G_commaSeparatedIdentifiers] = CONTAINER(({
-      REFERENCE(G_addition)
-        .or(token(Number))
-        .or(token(NumberFloat))
-        .or(token(String))
-        .or(token(Identifier)),
-      CONTAINER(({
-        token(Comma),
-        REFERENCE(G_commaSeparatedIdentifiers)
-      })).optional()
-    }));
-
-    grammar_store[G_commaSeparatedTypedIdentifiers] = CONTAINER(({
-      token(Identifier)
-        .or(token(Number))
-        .or(token(NumberFloat)),
-      token(Colon),
-      token(Identifier),
-      CONTAINER(({
-        token(Comma),
-        REFERENCE(G_commaSeparatedTypedIdentifiers)
-      })).optional()
-    }));
-
-    grammar_store[G_function] = CONTAINER(({
-      token(Function),
-      token(Identifier),
-      token(LeftParen),
-      REFERENCE(G_commaSeparatedTypedIdentifiers)
-        .optional(),
-      token(RightParen),
-      CONTAINER(({
-        token(RightArrow),
-        token(Identifier)
-      })).optional(),
-      token(LeftBrace),
-      REFERENCE(G_program)
-        .optional(),
-      token(RightBrace)
-    }));
-
-    grammar_store[G_functionCall] = CONTAINER(({
-      token(Identifier),
-      token(LeftParen),
-      REFERENCE(G_commaSeparatedIdentifiers)
-        .optional(),
-      token(RightParen)
-    }));
-
-    grammar_store[G_immutableVariable] = CONTAINER(({
-      token(Let),
-      token(Identifier),
-      token(Equal),
-      token(Number)
-        .or(token(NumberFloat))
-        .or(token(String))
-        .or(REFERENCE(G_functionCall)),
-      token(Semicolon)
-    }));
-
-    grammar_store[G_returnStatement] = CONTAINER(({
-      token(Return),
-      token(Number)
-        .or(token(NumberFloat))
-        .or(token(String))
-        .or(REFERENCE(G_functionCall)),
-    }));
-    
-
-    grammar_store[G_program] = REFERENCE(G_moduleImport)
-      .or(REFERENCE(G_addition))
-      .or(REFERENCE(G_useStatement))
-      .or(REFERENCE(G_function))
-      .or(REFERENCE(G_functionCall))
-      .or(REFERENCE(G_returnStatement))
-      .or(REFERENCE(G_immutableVariable))
-      .or(token(Semicolon))
-      .repeat();
-    #pragma endregion
+    create_grammar(grammar_store);
 
     auto * current_parser_node = &grammar_store[G_program];
     int tokens_i = 0;
 
-    ParsingResult * program_parsing_result = new ParsingResult(0);
+    ParsingResult * program_parsing_result = new ParsingResult(0, G_program);
 
     while (true) {
       if (tokens_i >= tokens.size()) {
-        LOG("\nparsing success");
+        LOG("\nparsing success\n");
         break;
       }
 
@@ -454,5 +331,7 @@ namespace parser {
       LOG("\nbefore: " << tokens_i << ", after: " << parsing_results.back().pos << '\n');
       tokens_i = parsing_results.back().pos;
     }
+
+    recursive_parsing_result_lookup(program_parsing_result);
   }
 };

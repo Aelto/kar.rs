@@ -1,5 +1,8 @@
 #pragma once
 
+#include <unordered_map>
+#include <vector>
+
 #include "../tokenizer/token.h"
 
 /**
@@ -51,6 +54,12 @@ enum ParserNodeType {
  **/
 struct ParserNode {
   ParserNodeType type = none;
+
+  /**
+   * stores the type of the container
+   * note: only used if `ParserNodeType == container`
+   **/
+  GrammarType grammar_type = G_None;
 
   /**
    * type of the matching token
@@ -143,8 +152,8 @@ struct ParserNode {
     return *this;
   };
 
-  ParserNode(ParserNodeType type = none, std::unordered_map<GrammarType, ParserNode> * store = nullptr)
-    : type(type), store(store) {};
+  ParserNode(ParserNodeType type = none, std::unordered_map<GrammarType, ParserNode> * store = nullptr, GrammarType grammar_type = G_None)
+    : type(type), store(store), grammar_type(grammar_type) {};
 };
 
 ParserNode token(TokenType type) {

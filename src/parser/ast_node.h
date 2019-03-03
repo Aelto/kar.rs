@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "../tokenizer/token.h"
 
 struct AstNode {
