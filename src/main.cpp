@@ -7,6 +7,7 @@
 #include "tokenizer/tokenizer.h"
 #include "tokenizer/print_token.h"
 #include "parser/parser.h"
+#include "translater/translater.h"
 
 int main(int argc, char * argv[]) {
   if (argc < 2) {
@@ -37,7 +38,8 @@ int main(int argc, char * argv[]) {
     }
   }
 
-  parser::parser(tokens);
+  auto parser_result = parser::parser(tokens);
+  translater::translater(parser_result);
 
   return 0;
 }

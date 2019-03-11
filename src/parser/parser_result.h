@@ -6,10 +6,10 @@
 #include "parser_node.h"
 
 namespace parser {
-  struct ParsingResult {
+  struct ParserResult {
     int pos;
 
-    std::vector<ParsingResult> children;
+    std::vector<ParserResult> children;
 
     Token * token;
 
@@ -17,25 +17,25 @@ namespace parser {
 
     GrammarType grammar_type = G_None;
 
-    ParsingResult()
+    ParserResult()
       : pos(0), children(), is_container(true) {};
 
-    ParsingResult(int pos, Token * token)
+    ParserResult(int pos, Token * token)
       : pos(pos), token(token), is_container(false) {};
 
-    ParsingResult(int pos, GrammarType grammar_type)
+    ParserResult(int pos, GrammarType grammar_type)
       : pos(pos), children(), is_container(true), grammar_type(grammar_type) {};
   };
   
-  ParsingResult new_container(int pos, GrammarType grammar_type) {
-    return ParsingResult(pos, grammar_type);
+  ParserResult new_container(int pos, GrammarType grammar_type) {
+    return ParserResult(pos, grammar_type);
   };
 
-  ParsingResult new_token(int pos, Token * token) {
-    return ParsingResult(pos, token);
+  ParserResult new_token(int pos, Token * token) {
+    return ParserResult(pos, token);
   };
 
-  int add_results(ParsingResult & result, std::vector<ParsingResult> & result_list) {
+  int add_results(ParserResult & result, std::vector<ParserResult> & result_list) {
     if (!result.is_container || result_list.empty()) {
       return result.pos;
     }

@@ -1,7 +1,8 @@
 #pragma once
 #include <unordered_map>
-#include "parsing_result.h"
+#include "parser_result.h"
 #include "parser_node.h"
+#include "parser_flags.h"
 
 
 #define CONTAINER(grammar_type, children) ParserNode(container, &store, grammar_type).group(std::vector<ParserNode> children)
@@ -11,14 +12,15 @@ namespace parser {
   void create_grammar(std::unordered_map<GrammarType, ParserNode> & store) {
     store[G_moduleImport] = CONTAINER(G_moduleImport, ({
       token(Module),
-      token(Identifier),
+      token(Identifier).flag(ModuleName),
       token(Semicolon)
     }));
 
     store[G_addition] = CONTAINER(G_addition, ({
       token(Number)
           .or(token(NumberFloat))
-          .or(token(Identifier)),
+          .or(token(Identifier))
+          .flag(AdditionLeftMember),
       token(Plus),
       REFERENCE(G_addition)
         .or(token(Number))
@@ -29,19 +31,19 @@ namespace parser {
     store[G_useStatement] = CONTAINER(G_useStatement, ({
       token(Use),
       CONTAINER(G_None, ({
-        token(Identifier),
+        token(Identifier).flag(UseStatementParentNamespace),
         token(DoubleColon)
       })).repeat(),
       CONTAINER(G_None, ({
         token(LeftBrace),
-        token(Identifier),
+        token(Identifier).flag(UseStatementChildIdentifier),
         CONTAINER(G_None, ({
           token(Comma),
-          token(Identifier)
+          token(Identifier).flag(UseStatementChildIdentifier)
         })).repeat().optional(),
         token(RightBrace)
       }))
-      .or(token(Identifier)),
+      .or(token(Identifier).flag(UseStatementChildIdentifier)),
       token(Semicolon)
     }));
 

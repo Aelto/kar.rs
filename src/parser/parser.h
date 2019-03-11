@@ -9,8 +9,8 @@
 #include "../tokenizer/print_token.h"
 #include "../tokenizer/token.h"
 #include "../result.h"
-#include "parsing_result.h"
-#include "create_grammar.h"
+#include "parser_result.h"
+#include "parser_grammar.h"
 #include "parser_node.h"
 
 using result::Result, result::Ok, result::Err;
@@ -23,7 +23,7 @@ namespace parser {
     return parser_node->match_token == token->type;
   }
 
-  Result<vector<ParsingResult>, size_t> match_parser_node(vector<Token> & tokens, size_t tokens_i, ParserNode * parser_node) {
+  Result<vector<ParserResult>, size_t> match_parser_node(vector<Token> & tokens, size_t tokens_i, ParserNode * parser_node) {
     LOG("\n" << tokens_i << "|" << string(tokens_i, ' '));
 
     if (parser_node->type == match) {
@@ -36,7 +36,7 @@ namespace parser {
       print_token(token->type);
 
       int or_index = -1;
-      std::vector<ParsingResult> output;
+      std::vector<ParserResult> output;
 
       do {
         auto current_output = new_container(tokens_i, G_None);
@@ -47,7 +47,7 @@ namespace parser {
 
           if (!do_match) {
             LOG(" no_match ");
-            return Err<vector<ParsingResult>>(tokens_i);
+            return Err<vector<ParserResult>>(tokens_i);
           }
 
           output.push_back(new_token(tokens_i + 1, token));
@@ -104,7 +104,7 @@ namespace parser {
     else if (parser_node->type == reference) {
       LOG("reference: " << parser_node->ref_to << " ");
       int or_index = -1;
-      std::vector<ParsingResult> output;
+      std::vector<ParserResult> output;
 
       do {
         auto current_output = new_container(tokens_i, G_None);
@@ -115,7 +115,7 @@ namespace parser {
           auto result = match_parser_node(tokens, tokens_i, referenced_parser_node);
 
           if (result.is_error) {
-            return Err<vector<ParsingResult>>(tokens_i);
+            return Err<vector<ParserResult>>(tokens_i);
           }
 
           auto parsing_result = result.unwrap_or({});
@@ -173,7 +173,7 @@ namespace parser {
       LOG("container");
       int or_index = -1;
 
-      std::vector<ParsingResult> output;
+      std::vector<ParserResult> output;
 
       do {
         auto current_output = new_container(tokens_i, parser_node->grammar_type);
@@ -190,7 +190,7 @@ namespace parser {
               // and the child was not optional, quick-return
               if (!child_parser_node.is_optional) {
                 if (output.empty()) {
-                  return Err<vector<ParsingResult>>(tokens_i);
+                  return Err<vector<ParserResult>>(tokens_i);
                 }
                 else {
                   return Ok<size_t>(output);
@@ -285,10 +285,10 @@ namespace parser {
     }
 
     // returning the same position as before means there was no match at all
-    return Err<vector<ParsingResult>>(tokens_i);
+    return Err<vector<ParserResult>>(tokens_i);
   }
 
-  void recursive_parsing_result_lookup(ParsingResult * parsing_result, unsigned int depth = 0) {
+  void recursive_parsing_result_lookup(ParserResult * parsing_result, unsigned int depth = 0) {
     LOG(string(depth, ' ') << parsing_result->grammar_type << "\n");
 
     for (auto & child : parsing_result->children) {
@@ -296,14 +296,14 @@ namespace parser {
     }
   }
 
-  void parser(std::vector<Token> & tokens) {
+  ParserResult * parser(std::vector<Token> & tokens) {
     std::unordered_map<GrammarType, ParserNode> grammar_store;
     create_grammar(grammar_store);
 
     auto * current_parser_node = &grammar_store[G_program];
     int tokens_i = 0;
 
-    ParsingResult * program_parsing_result = new ParsingResult(0, G_program);
+    ParserResult * program_parsing_result = new ParserResult(0, G_program);
 
     while (true) {
       if (tokens_i >= tokens.size()) {
@@ -311,7 +311,7 @@ namespace parser {
         break;
       }
 
-      Result<vector<ParsingResult>, size_t> results = match_parser_node(tokens, tokens_i, current_parser_node);
+      Result<vector<ParserResult>, size_t> results = match_parser_node(tokens, tokens_i, current_parser_node);
 
       if (results.is_error) {
         LOG("parsing stopped at" << results.err);
@@ -333,5 +333,8 @@ namespace parser {
     }
 
     recursive_parsing_result_lookup(program_parsing_result);
+
+    return program_parsing_result;
   }
+
 };
