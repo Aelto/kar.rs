@@ -1,14 +1,19 @@
-objs = main.obj
-winargs = /EHsc /I include /std:c++17 /O2 /DDEBUG
+cc = cl
+link = cl
+obj = obj
+args = -EHsc -I include -std:c++17 -O2 -DDEBUG
+nolink = -c
 
-win: $(objs)
-	cl $(objs) $(winargs)
+objs = main.$(obj)
 
-main.obj: src/main.cpp src/parser/parser.h
-	cl /c src/main.cpp $(winargs)
+main.$(obj): src/main.cpp
+	$(cc) $(nolink) src/main.cpp $(args)
+
+all: $(objs)
+	$(cc) $(objs) $(args)
 
 clean-win:
-	del *.obj
+	del *.$(obj)
 
 run: main.exe
 	main.exe kar/main.kar
